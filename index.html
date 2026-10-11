@@ -197,7 +197,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v13';
+const BUILD = 'v14';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -243,7 +243,12 @@ let peaks=[], walking=false;
 // light damping while actually turning (that is the user).
 const K_MIN=0.14, K_MAX=0.70, K_SPAN=8;   // degrees of change that counts as a real turn
 const SM_POS=0.22, MAXRATE=600;            // deg/sec, a spike guard only
-const HFOV=62, VFOV=100, NEAR=1.6, FAR=3.0, STEPLEN=0.65, PLACE_D=2.6;
+const Q = new URLSearchParams(location.search);
+let HFOV = parseFloat(Q.get('hfov')) || 67;        // ?hfov=72 to tune live
+let VFOV = 100;                                     // derived once the video is up
+const NEAR=1.6, FAR=3.0, PLACE_D=2.6;
+let STEPLEN = parseFloat(Q.get('steplen')) || 0.65; // ?steplen=0.72
+let roll = 0, camInfo = '-';
 
 ITEMS.forEach(it=>{
   const c=document.createElement('div');
@@ -318,11 +323,31 @@ function goGuided(){
 }
 $('manual').onclick=goGuided;
 
+function measureFov(){
+  var v=$('cam'), vw=v.videoWidth, vh=v.videoHeight;
+  var cw=v.clientWidth, ch=v.clientHeight;
+  if(!vw||!vh||!cw||!ch){ camInfo='no-dims'; return; }
+  // object-fit: cover — work out which part of the frame is actually on screen
+  var sc=Math.max(cw/vw, ch/vh);
+  var visW=cw/sc, visH=ch/sc;                   // visible slice, in video pixels
+  // pinhole model: the nominal figure describes the frame's LONG side
+  var nominal = parseFloat(Q.get('hfov')) || 67;
+  var longPx  = Math.max(vw, vh);
+  var focal   = (longPx/2) / Math.tan(nominal*Math.PI/360);
+  var hv = 2*Math.atan((visW/2)/focal)*180/Math.PI;
+  var vv = 2*Math.atan((visH/2)/focal)*180/Math.PI;
+  // a bad measurement must never wreck the experience
+  HFOV = Math.max(30, Math.min(90, hv));
+  VFOV = Math.max(30, Math.min(130, vv));
+  camInfo = vw+'x'+vh+' box'+cw+'x'+ch+' raw'+hv.toFixed(1)+'/'+vv.toFixed(1)+' use'+HFOV.toFixed(1)+'/'+VFOV.toFixed(1);
+}
+
 function startCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
   navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
     .then(function(st){ $('cam').srcObject=st; return $('cam').play(); })
-    .catch(function(){});
+    .then(function(){ setTimeout(measureFov, 400); })
+    .catch(function(e){ camInfo = 'ERR:'+(e && e.name || 'unknown'); });
 }
 
 function openStage(){
@@ -385,6 +410,7 @@ function onOri(e){
     haveOri=true;
   }
   if(bt!=null){ pitch=Math.max(-80,Math.min(80,bt-90)); haveOri=true; }
+  if(e.gamma!=null && !isNaN(e.gamma)) roll = Math.max(-45,Math.min(45,e.gamma));
 }
 var oriHooked=false;
 function hookOri(){
@@ -531,11 +557,15 @@ function loop(){
     var brg=Math.atan2(dx,dy)*180/Math.PI;
     var dAz=norm(brg-headS);
     var el=m.el_;
-    if(Math.abs(dAz)>HFOV*0.85){ el.style.display='none'; }
+    if(Math.abs(dAz)>110){ el.style.display='none'; }   // behind the user
     else{
+      var ox = (dAz/HFOV)*W;
+      var oy = -((m.el0-pitchS)/VFOV)*H;
+      var rr = roll*Math.PI/180;                 // keep the marker level with the world
+      var px = W/2 + ox*Math.cos(rr) - oy*Math.sin(rr);
+      var py = H/2 + ox*Math.sin(rr) + oy*Math.cos(rr);
+      if(px < -90 || px > W+90){ el.style.display='none'; return; }
       el.style.display='flex';
-      var px=W/2 + (dAz/HFOV)*W;
-      var py=H/2 - ((m.el0-pitchS)/VFOV)*H;
       var sc=Math.max(.52,Math.min(1.7,2.4/Math.max(dist,.6)));
       el.style.left='0px'; el.style.top='0px';
       el.style.transform='translate('+(px).toFixed(1)+'px,'+(py).toFixed(1)+'px) translate(-50%,-50%) scale('+sc.toFixed(2)+')';
@@ -575,7 +605,7 @@ function sample(){
       +' jit='+jitter.toFixed(2)+' pitch='+pitch.toFixed(0)
       +' steps='+steps+' walk='+(walking?1:0)+' grav='+grav.toFixed(2)+' hp['+hpMin.toFixed(2)+','+hpMax.toFixed(2)+']'
       +' ux='+uxS.toFixed(2)+' uy='+uyS.toFixed(2)
-      +' marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2)
+      +' marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2)+' fov='+HFOV.toFixed(1)+'/'+VFOV.toFixed(1)+' roll='+roll.toFixed(0)+' cam='+camInfo
       +(marks.length?(' dist='+Math.hypot(marks[0].x-uxS,marks[0].y-uyS).toFixed(2)):''));
     hpMin=0; hpMax=0;
   }
