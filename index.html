@@ -140,7 +140,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
       ואז לרענן את הדף ולנסות שוב.
       <div style="display:flex;gap:8px;margin-top:11px">
         <button class="pri" id="retry" style="padding:10px 12px;font-size:14px">נסו שוב</button>
-        <button class="sec" id="manual" style="padding:10px 12px;font-size:14px">המשיכו במצב ידני</button>
+        <button class="sec" id="manual" style="padding:10px 12px;font-size:14px">המשיכו במצב מודרך</button>
       </div>
       <div id="diag" style="margin-top:9px;font-size:11.5px;opacity:.75;direction:ltr;text-align:left"></div>
     </div>
@@ -190,7 +190,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v7';
+const BUILD = 'v9';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -226,7 +226,10 @@ if($('bld')) $('bld').textContent = BUILD;
 let sel=null, marks=[], ux=0, uy=0, head=0, pitch=0, steps=0, haveOri=false, manual=false, running=false;
 let permOri='—', permMot='—', oriCount=0, motCount=0, hasCompass=false;
 let headS=0, pitchS=0, uxS=0, uyS=0, headSrc=null, oriSeen=false;
-let evtSrc=null, dbg=false, headRawLast=0, jitter=0;
+let evtSrc=null, dbg=false, headRawLast=0, jitter=0, bestQ=0;
+// Guided mode: the same story with no compass at all. Distance is driven by
+// detected motion, so there is nothing that can drift.
+let mode='sensor', gDist=2.6, gStage=0, gLast=0, gPeak=0;
 let peaks=[], walking=false;
 // Adaptive filter: heavy damping while nearly still (that is noise),
 // light damping while actually turning (that is the user).
@@ -288,12 +291,16 @@ $('retry').onclick=function(){
   },1800);
 };
 
-$('manual').onclick=function(){
-  manual=true;
+function goGuided(){
+  mode='guided'; manual=false;
   $('warn').style.display='none';
   $('p1').classList.remove('on');
-  $('ctlLbl').textContent='מצב ידני — הקישו על המסך כדי להניח סימון';
-};
+  $('ctl').style.display='block';
+  $('cross').classList.add('on');
+  $('ctlLbl').textContent='בחרו ציוד, כוונו אליו והקישו ״הנח כאן״';
+  if(!running){ running=true; requestAnimationFrame(loop); }
+}
+$('manual').onclick=goGuided;
 
 function startCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
@@ -308,11 +315,9 @@ function openStage(){
   $('cross').classList.add('on');
   if(!running){ running=true; requestAnimationFrame(loop); }
   setTimeout(function(){
-    if(!haveOri && !manual){
-      diag();
-      $('warn').style.display='block';
-      $('p1').classList.add('on');
-    }
+    if(mode==='guided') return;
+    if(!haveOri){ diag(); goGuided(); return; }        // no sensors at all
+    if(bestQ<2 && jitter>1.2){ diag(); goGuided(); }   // heading present but drifting
   },4200);
 }
 
@@ -323,28 +328,37 @@ function diag(){
     ' · מקור כיוון='+(headSrc||'—');
 }
 
+// How trustworthy is this event's heading?
+//  3 = iOS true compass   2 = absolute (true north)   1 = relative, drifts
+function oriQuality(e){
+  if(e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) return 3;
+  if(e.type==='deviceorientationabsolute' || e.absolute===true) return 2;
+  return 1;
+}
+
 function onOri(e){
   var c = (e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) ? e.webkitCompassHeading : null;
   var al = (e.alpha!=null && !isNaN(e.alpha)) ? ((360-e.alpha)%360+360)%360 : null;
   var bt = (e.beta!=null && !isNaN(e.beta)) ? e.beta : null;
 
-  // An event with nothing in it must never claim the lock. Browsers fire an
-  // empty deviceorientationabsolute before the sensor has anything to say.
+  // An empty event must never claim the lock: browsers fire one before the
+  // sensor has anything to say.
   if(c==null && al==null && bt==null) return;
 
-  // Lock to the first event type that actually carries data, then ignore the
-  // other one: two event types mean two reference frames fighting.
-  if(!evtSrc) evtSrc = e.type;
-  if(e.type !== evtSrc) return;
+  var q = oriQuality(e);
+  if(q > bestQ){
+    // Upgrade to the better source. Android fires both a relative and an
+    // absolute stream; the relative one drifts, so absolute always wins.
+    bestQ = q; evtSrc = e.type;
+    headSrc = (c!=null) ? 'compass' : 'alpha';
+    hasCompass = (c!=null);
+    oriSeen = false;              // snap to the new frame, do not sweep into it
+  } else if(q < bestQ || e.type !== evtSrc){
+    return;                        // a worse or competing stream
+  }
   oriCount++;
 
-  // Same rule for the heading source itself.
-  if(!headSrc){
-    if(c!=null){ headSrc='compass'; hasCompass=true; }
-    else if(al!=null){ headSrc='alpha'; }
-  }
-  var h = (headSrc==='compass') ? c : (headSrc==='alpha' ? al : null);
-
+  var h = (headSrc==='compass') ? c : al;
   if(h!=null){
     var nh=((h%360)+360)%360;
     var dd=nh-headRawLast; while(dd>180)dd-=360; while(dd<-180)dd+=360;
@@ -374,6 +388,8 @@ function hookMotion(){
     var now=Date.now();
     if(m-lp>1.6 && now-lastStep>330){
       lastStep=now;
+      gPeak = now;
+      if(mode==='guided'){ gDist += (gStage===1 ? 0.55 : (gStage===3 ? -0.55 : 0)); }
       var wasWalking = walking;
       peaks.push(now); if(peaks.length>4) peaks.shift();
       // one jolt is hand shake; two peaks in a walking cadence is walking
@@ -413,11 +429,18 @@ function doPlace(){
     x:uxS+PLACE_D*Math.sin(r), y:uyS+PLACE_D*Math.cos(r),
     el0:pitchS, was:false,
     tasks:it.tasks.map(function(t){return Object.assign({},t);})};
+  m.sx = window.innerWidth/2; m.sy = window.innerHeight*0.46;
   var el=document.createElement('div');
   el.className='mk';
   el.innerHTML='<div class="dot"></div><div class="tag"></div>';
   $('world').appendChild(el); m.el_=el;
   marks.push(m);
+  if(mode==='guided'){
+    gStage=1; gDist=PLACE_D; gPeak=Date.now();
+    $('place').disabled=true;
+    $('ctlLbl').textContent='עכשיו התרחקו כמה צעדים מהציוד';
+    return;
+  }
   $('done').disabled=false;
   $('ctlLbl').textContent='הסתובבו והתרחקו — הסימון יישאר במקום';
   if(marks.length===1) setTimeout(function(){openSheet(m);},450);
@@ -427,8 +450,49 @@ function norm(d){ while(d>180)d-=360; while(d<-180)d+=360; return d; }
 
 function sm(cur,tgt,k){ var d=tgt-cur; while(d>180)d-=360; while(d<-180)d+=360; return cur+d*k; }
 
+function guidedStep(){
+  var now=Date.now();
+  if(now-gPeak>1400 && now-gLast>260){      // never dead-end if the phone is still
+    gLast=now; gDist += (gStage===1 ? 0.16 : (gStage===3 ? -0.16 : 0));
+  }
+  gDist = Math.max(0.5, Math.min(9, gDist));
+  var m = marks[0]; if(!m) return;
+
+  if(gStage===1 && gDist>FAR){
+    gStage=2;
+    var t=m.tasks.find(function(t){return t.d==='now';}) || m.tasks[0];
+    fireAlert(m,t);
+    $('ctlLbl').textContent='זו ההתראה שהעובד מקבל בשטח — עכשיו חזרו אל הציוד';
+  } else if(gStage===2 && !$('alert').classList.contains('on')){
+    gStage=3;
+  } else if(gStage===3 && gDist<NEAR){
+    gStage=4;
+    if(!$('sheet').classList.contains('on')) openSheet(m);
+    $('done').disabled=false;
+    $('ctlLbl').textContent='המערכת זיהתה שחזרתם — הקישו סיום';
+  }
+
+  var el=m.el_;
+  el.style.display='flex';
+  var sc=Math.max(.5,Math.min(1.7,2.4/Math.max(gDist,.6)));
+  el.style.left='0px'; el.style.top='0px';
+  el.style.transform='translate('+m.sx.toFixed(1)+'px,'+m.sy.toFixed(1)+'px) translate(-50%,-50%) scale('+sc.toFixed(2)+')';
+  var worst = m.tasks.some(function(t){return t.d==='now';}) ? 'now'
+            : (m.tasks.some(function(t){return t.d==='soon';}) ? 'soon' : 'ok');
+  var col = worst==='now' ? '#E5484D' : (worst==='soon' ? '#E0A02E' : '#3FB984');
+  var dot=el.querySelector('.dot');
+  dot.style.background=col;
+  dot.innerHTML=m.it.ic+(worst==='now'?'<b>!</b>':'');
+  el.querySelector('.tag').innerHTML=m.it.nm+' · <em>'+gDist.toFixed(1)+' מ׳</em>';
+  el.classList.toggle('near',gDist<NEAR&&worst!=='now');
+  el.classList.toggle('due',gDist<NEAR&&worst==='now');
+  $('hud').innerHTML = dbg ? (BUILD+' · guided · stage '+gStage+' · d '+gDist.toFixed(2))
+    : '<b>'+gDist.toFixed(1)+'</b> מ׳ מהציוד';
+}
+
 function loop(){
   var W=window.innerWidth,H=window.innerHeight;
+  if(mode==='guided'){ guidedStep(); requestAnimationFrame(loop); return; }
   var d = head-headS; while(d>180)d-=360; while(d<-180)d+=360;
   var k = K_MIN + (K_MAX-K_MIN)*Math.min(1, Math.abs(d)/K_SPAN);
   var step = d*k, cap = MAXRATE/60;
