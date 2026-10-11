@@ -197,7 +197,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v12';
+const BUILD = 'v13';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -394,15 +394,23 @@ function hookOri(){
 }
 
 var lp=9.81, lastStep=0, motHooked=false;
+var grav=9.81, armed=false, hpMin=0, hpMax=0;
 function hookMotion(){
   if(motHooked) return; motHooked=true;
   window.addEventListener('devicemotion',function(e){
     motCount++;
     var a=e.accelerationIncludingGravity; if(!a) return;
     var m=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
-    lp=lp*0.88+m*0.12;
+    // The baseline must be MUCH slower than the gait, or it chases the step
+    // peak and the difference never grows. ~2 s time constant = gravity only.
+    grav = grav*0.992 + m*0.008;
+    var hp = m - grav;
+    lp = grav;
+    if(hp>hpMax) hpMax=hp; if(hp<hpMin) hpMin=hp;
     var now=Date.now();
-    if(m-lp>1.6 && now-lastStep>330){
+    if(!armed && hp < -0.55) armed = true;         // trough of the stride
+    if(armed && hp > 1.0 && now-lastStep>280){     // then its peak
+      armed=false;
       lastStep=now;
       gPeak = now;
       if(mode==='guided'){ gDist += (gStage===1 ? 0.55 : (gStage===3 ? -0.55 : 0)); }
@@ -565,10 +573,11 @@ function sample(){
       +' ori='+oriCount+' mot='+motCount
       +' head='+head.toFixed(1)+' headS='+headS.toFixed(1)
       +' jit='+jitter.toFixed(2)+' pitch='+pitch.toFixed(0)
-      +' steps='+steps+' walk='+(walking?1:0)+' lp='+lp.toFixed(2)
+      +' steps='+steps+' walk='+(walking?1:0)+' grav='+grav.toFixed(2)+' hp['+hpMin.toFixed(2)+','+hpMax.toFixed(2)+']'
       +' ux='+uxS.toFixed(2)+' uy='+uyS.toFixed(2)
       +' marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2)
       +(marks.length?(' dist='+Math.hypot(marks[0].x-uxS,marks[0].y-uyS).toFixed(2)):''));
+    hpMin=0; hpMax=0;
   }
   if(now-tLast<120) return;
   tLast=now;
