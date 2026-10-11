@@ -118,7 +118,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 <div class="cross" id="cross"></div>
 
 <div class="top">
-  <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה</div></div>
+  <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה · <span id="bld"></span></div></div>
   <div class="hud" id="hud" style="pointer-events:auto"></div>
 </div>
 
@@ -190,6 +190,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
+const BUILD = 'v7';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -220,6 +221,7 @@ const ITEMS=[
 ];
 const DUE={now:'דורש טיפול',soon:'מתקרב',ok:'בתוקף'};
 const $=id=>document.getElementById(id);
+if($('bld')) $('bld').textContent = BUILD;
 
 let sel=null, marks=[], ux=0, uy=0, head=0, pitch=0, steps=0, haveOri=false, manual=false, running=false;
 let permOri='—', permMot='—', oriCount=0, motCount=0, hasCompass=false;
@@ -228,7 +230,7 @@ let evtSrc=null, dbg=false, headRawLast=0, jitter=0;
 let peaks=[], walking=false;
 // Adaptive filter: heavy damping while nearly still (that is noise),
 // light damping while actually turning (that is the user).
-const K_MIN=0.08, K_MAX=0.62, K_SPAN=12;   // degrees of change that counts as a real turn
+const K_MIN=0.14, K_MAX=0.70, K_SPAN=8;   // degrees of change that counts as a real turn
 const SM_POS=0.22, MAXRATE=600;            // deg/sec, a spike guard only
 const HFOV=62, VFOV=100, NEAR=1.6, FAR=3.0, STEPLEN=0.65, PLACE_D=2.6;
 
@@ -370,7 +372,7 @@ function hookMotion(){
     var m=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
     lp=lp*0.88+m*0.12;
     var now=Date.now();
-    if(m-lp>2.2 && now-lastStep>380){
+    if(m-lp>1.6 && now-lastStep>330){
       lastStep=now;
       var wasWalking = walking;
       peaks.push(now); if(peaks.length>4) peaks.shift();
