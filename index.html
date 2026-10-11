@@ -119,7 +119,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <div class="top">
   <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה</div></div>
-  <div class="hud" id="hud"></div>
+  <div class="hud" id="hud" style="pointer-events:auto"></div>
 </div>
 
 <div class="panel on" id="p1">
@@ -224,7 +224,9 @@ const $=id=>document.getElementById(id);
 let sel=null, marks=[], ux=0, uy=0, head=0, pitch=0, steps=0, haveOri=false, manual=false, running=false;
 let permOri='—', permMot='—', oriCount=0, motCount=0, hasCompass=false;
 let headS=0, pitchS=0, uxS=0, uyS=0, headSrc=null, oriSeen=false;
-const SM_ANG=0.16, SM_POS=0.18;
+let evtSrc=null, dbg=false, headRawLast=0, jitter=0;
+let peaks=[], walking=false;
+const SM_ANG=0.10, SM_POS=0.12, MAXRATE=140;   // deg/sec cap on heading
 const HFOV=62, VFOV=100, NEAR=1.6, FAR=3.0, STEPLEN=0.65, PLACE_D=2.6;
 
 ITEMS.forEach(it=>{
@@ -317,6 +319,10 @@ function diag(){
 }
 
 function onOri(e){
+  // Two listeners are registered; whichever event type speaks first owns the
+  // session. Letting both through means two reference frames fighting.
+  if(!evtSrc) evtSrc = e.type;
+  if(e.type !== evtSrc) return;
   oriCount++;
   var c = (e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) ? e.webkitCompassHeading : null;
   var al = (e.alpha!=null && !isNaN(e.alpha)) ? ((360-e.alpha)%360+360)%360 : null;
@@ -330,7 +336,11 @@ function onOri(e){
   var h = (headSrc==='compass') ? c : (headSrc==='alpha' ? al : null);
 
   if(h!=null){
-    head=((h%360)+360)%360;
+    var nh=((h%360)+360)%360;
+    var dd=nh-headRawLast; while(dd>180)dd-=360; while(dd<-180)dd+=360;
+    jitter = jitter*0.9 + Math.abs(dd)*0.1;
+    headRawLast = nh;
+    head = nh;
     if(!oriSeen){ oriSeen=true; headS=head; }   // no sweep in from 0 on the first reading
     haveOri=true;
   }
@@ -356,10 +366,17 @@ function hookMotion(){
     lp=lp*0.88+m*0.12;
     var now=Date.now();
     if(m-lp>2.2 && now-lastStep>380){
-      lastStep=now; steps++;
-      var r=headS*Math.PI/180;
-      ux+=STEPLEN*Math.sin(r); uy+=STEPLEN*Math.cos(r);
+      lastStep=now;
+      peaks.push(now); if(peaks.length>4) peaks.shift();
+      // a single jolt is hand shake; three peaks in a walking cadence is walking
+      walking = peaks.length>=3 && (now-peaks[0])<2600;
+      if(walking){
+        steps++;
+        var r=headS*Math.PI/180;
+        ux+=STEPLEN*Math.sin(r); uy+=STEPLEN*Math.cos(r);
+      }
     }
+    if(now-lastStep>1800){ peaks.length=0; walking=false; }
   },true);
 }
 
@@ -402,7 +419,11 @@ function sm(cur,tgt,k){ var d=tgt-cur; while(d>180)d-=360; while(d<-180)d+=360; 
 
 function loop(){
   var W=window.innerWidth,H=window.innerHeight;
-  headS  = sm(headS, head, SM_ANG);
+  var want = sm(headS, head, SM_ANG);
+  var step = want-headS; while(step>180)step-=360; while(step<-180)step+=360;
+  var cap = MAXRATE/60;
+  if(step> cap) step= cap; if(step< -cap) step=-cap;
+  headS = ((headS+step)%360+360)%360;
   pitchS = pitchS + (pitch - pitchS) * SM_ANG;
   uxS   += (ux - uxS) * SM_POS;
   uyS   += (uy - uyS) * SM_POS;
@@ -458,6 +479,7 @@ function openSheet(m){
   $('sheet').classList.add('on');
   $('cl').onclick=function(){$('sheet').classList.remove('on');};
 }
+$('hud').onclick=function(){ dbg=!dbg; };
 $('sheet').onclick=function(e){ if(e.target.id==='sheet') $('sheet').classList.remove('on'); };
 
 var alertFor=null, lastSum='';
