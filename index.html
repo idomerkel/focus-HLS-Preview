@@ -226,7 +226,10 @@ let permOri='—', permMot='—', oriCount=0, motCount=0, hasCompass=false;
 let headS=0, pitchS=0, uxS=0, uyS=0, headSrc=null, oriSeen=false;
 let evtSrc=null, dbg=false, headRawLast=0, jitter=0;
 let peaks=[], walking=false;
-const SM_ANG=0.10, SM_POS=0.12, MAXRATE=140;   // deg/sec cap on heading
+// Adaptive filter: heavy damping while nearly still (that is noise),
+// light damping while actually turning (that is the user).
+const K_MIN=0.08, K_MAX=0.62, K_SPAN=12;   // degrees of change that counts as a real turn
+const SM_POS=0.22, MAXRATE=600;            // deg/sec, a spike guard only
 const HFOV=62, VFOV=100, NEAR=1.6, FAR=3.0, STEPLEN=0.65, PLACE_D=2.6;
 
 ITEMS.forEach(it=>{
@@ -367,16 +370,19 @@ function hookMotion(){
     var now=Date.now();
     if(m-lp>2.2 && now-lastStep>380){
       lastStep=now;
+      var wasWalking = walking;
       peaks.push(now); if(peaks.length>4) peaks.shift();
-      // a single jolt is hand shake; three peaks in a walking cadence is walking
-      walking = peaks.length>=3 && (now-peaks[0])<2600;
+      // one jolt is hand shake; two peaks in a walking cadence is walking
+      walking = peaks.length>=2 && (now-peaks[peaks.length-2])<1500;
       if(walking){
-        steps++;
+        // credit the peak that started the cadence, so the first step is not lost
+        var add = (wasWalking ? 1 : 2);
         var r=headS*Math.PI/180;
-        ux+=STEPLEN*Math.sin(r); uy+=STEPLEN*Math.cos(r);
+        steps += add;
+        ux+=STEPLEN*add*Math.sin(r); uy+=STEPLEN*add*Math.cos(r);
       }
     }
-    if(now-lastStep>1800){ peaks.length=0; walking=false; }
+    if(now-lastStep>2200){ peaks.length=0; walking=false; }
   },true);
 }
 
@@ -419,12 +425,13 @@ function sm(cur,tgt,k){ var d=tgt-cur; while(d>180)d-=360; while(d<-180)d+=360; 
 
 function loop(){
   var W=window.innerWidth,H=window.innerHeight;
-  var want = sm(headS, head, SM_ANG);
-  var step = want-headS; while(step>180)step-=360; while(step<-180)step+=360;
-  var cap = MAXRATE/60;
+  var d = head-headS; while(d>180)d-=360; while(d<-180)d+=360;
+  var k = K_MIN + (K_MAX-K_MIN)*Math.min(1, Math.abs(d)/K_SPAN);
+  var step = d*k, cap = MAXRATE/60;
   if(step> cap) step= cap; if(step< -cap) step=-cap;
   headS = ((headS+step)%360+360)%360;
-  pitchS = pitchS + (pitch - pitchS) * SM_ANG;
+  var dp = pitch-pitchS;
+  pitchS += dp * (K_MIN + (K_MAX-K_MIN)*Math.min(1, Math.abs(dp)/K_SPAN));
   uxS   += (ux - uxS) * SM_POS;
   uyS   += (uy - uyS) * SM_POS;
   marks.forEach(function(m){
@@ -447,7 +454,7 @@ function loop(){
       var dot=el.querySelector('.dot');
       dot.style.background=col;
       dot.innerHTML=m.it.ic+(worst==='now'?'<b>!</b>':'');
-      el.querySelector('.tag').innerHTML=m.it.nm+' · <em>'+dist.toFixed(1)+' מ׳</em>';
+      el.querySelector('.tag').innerHTML=m.it.nm+' · <em>'+(dist<10?dist.toFixed(1):Math.round(dist))+' מ׳</em>';
       el.classList.toggle('near',dist<NEAR&&worst!=='now');
       el.classList.toggle('due',dist<NEAR&&worst==='now');
     }
