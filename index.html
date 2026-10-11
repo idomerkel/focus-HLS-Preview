@@ -9,180 +9,177 @@
   --navy:#0A1628; --panel:#17222D; --panel2:#1C2937; --edge:#2B3B4C;
   --ink:#E8EEF4; --dim:#8DA0B3; --faint:#5E7085;
   --cyan:#38E1FF; --green:#3FB984; --amber:#E0A02E; --red:#E5484D;
-  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
-body{background:#000;color:var(--ink);
+body{
+  background:var(--navy);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Hebrew",Arial,sans-serif;
-  font-size:16px;line-height:1.45}
+  font-size:16px;line-height:1.45;
+  padding-top:var(--safe-t);padding-bottom:var(--safe-b);
+  display:flex;flex-direction:column;
+}
 
-#cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#0A1628;z-index:0}
-#world{position:fixed;inset:0;z-index:1;pointer-events:none}
+/* ── top bar ── */
+.bar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--edge)}
+.bar .b{font-size:15px;font-weight:700;letter-spacing:.3px}
+.bar .t{font-size:10px;letter-spacing:1.6px;color:var(--faint)}
+.bar .step{margin-inline-start:auto;font-size:12px;color:var(--dim)}
 
-.top{position:fixed;top:0;left:0;right:0;z-index:20;padding:calc(var(--st) + 9px) 14px 9px;
-  background:linear-gradient(to bottom,rgba(6,14,22,.88),rgba(6,14,22,0));display:flex;align-items:center;gap:10px}
-.top .b{font-size:14px;font-weight:700}
-.top .t{font-size:9.5px;letter-spacing:1.5px;color:var(--faint)}
-.hud{margin-inline-start:auto;text-align:left;font-size:11px;color:var(--dim);line-height:1.4;
-  background:rgba(6,14,22,.55);border-radius:7px;padding:4px 7px}
-.hud b{color:var(--cyan)}
+/* ── screens ── */
+.screen{flex:1;min-height:0;display:none;flex-direction:column}
+.screen.on{display:flex}
 
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;
-  background:linear-gradient(to top,rgba(6,14,22,.95) 55%,rgba(6,14,22,0));
-  padding:16px 0 calc(10px + var(--sb))}
-.lbl{padding:0 14px 6px;font-size:12px;color:var(--dim)}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
+/* intro */
+.intro{padding:26px 22px;overflow-y:auto}
+.intro h1{font-size:27px;line-height:1.15;font-weight:700;margin:6px 0 12px}
+.intro p{font-size:15px;color:var(--dim);margin-bottom:16px}
+.intro ol{margin:0 18px 22px 0;padding:0;color:var(--ink);font-size:15px}
+.intro ol li{margin-bottom:9px}
+.kick{font-size:11px;letter-spacing:2.6px;color:var(--cyan);font-weight:700}
+
+/* stage */
+.stage{position:relative;flex:1;min-height:0;background:#0D1821;overflow:hidden}
+.stage img{width:100%;height:100%;object-fit:contain;display:block}
+.hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:30px;color:var(--faint);font-size:15px;pointer-events:none}
+.pin{position:absolute;transform:translate(50%,-50%);width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.5);cursor:pointer}
+.pin.due{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.55)}70%{box-shadow:0 0 0 14px rgba(229,72,77,0)}}
+.pin b{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;
+  background:var(--red);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+
+/* picker */
+.picker{flex:0 0 auto;border-top:1px solid var(--edge);background:var(--panel)}
+.picker .lbl{padding:9px 14px 5px;font-size:12px;color:var(--dim)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 14px 11px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;background:rgba(28,41,55,.92);border:1px solid var(--edge);border-radius:20px;
-  padding:8px 13px;font-size:14px;display:flex;align-items:center;gap:7px}
-.chip.sel{border-color:var(--cyan);color:var(--cyan);background:rgba(56,225,255,.12)}
+.chip{flex:0 0 auto;background:var(--panel2);border:1px solid var(--edge);border-radius:20px;
+  padding:8px 13px;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:7px;cursor:pointer}
+.chip.sel{border-color:var(--cyan);color:var(--cyan)}
 .chip span{font-size:17px}
-.acts{display:flex;gap:9px;padding:0 14px}
+
+/* bottom actions */
+.acts{flex:0 0 auto;display:flex;gap:9px;padding:11px 14px calc(11px + var(--safe-b));border-top:1px solid var(--edge)}
 button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:13px 16px;font-weight:600;font-size:15px}
 .pri{background:var(--cyan);color:#06202B;flex:1}
-.sec{background:rgba(28,41,55,.92);color:var(--dim);border:1px solid var(--edge)}
-button:disabled{opacity:.38}
+.sec{background:transparent;color:var(--dim);border:1px solid var(--edge)}
+button:disabled{opacity:.4}
 
-.mk{position:absolute;display:flex;flex-direction:column;align-items:center;
-  will-change:transform;pointer-events:none}
-.mk .dot{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:21px;border:2.5px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.6);position:relative}
-.mk .dot b{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;
-  background:var(--red);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff}
-.mk .tag{margin-top:5px;background:rgba(6,14,22,.86);border:1px solid var(--edge);border-radius:12px;
-  padding:3px 9px;font-size:11.5px;white-space:nowrap}
-.mk .tag em{font-style:normal;color:var(--cyan)}
-.mk.near .dot{animation:ring 1.4s infinite}
-@keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(56,225,255,.5)}70%{box-shadow:0 0 0 16px rgba(56,225,255,0)}}
-.mk.due .dot{animation:ringr 1.4s infinite}
-@keyframes ringr{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.55)}70%{box-shadow:0 0 0 16px rgba(229,72,77,0)}}
-
-.cross{position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;z-index:5;
-  border:1.5px solid rgba(255,255,255,.45);border-radius:50%;pointer-events:none;display:none}
-.cross.on{display:block}
-
-.panel{position:fixed;inset:0;z-index:30;background:var(--navy);display:none;
-  flex-direction:column;padding-top:var(--st)}
-.panel.on{display:flex}
-.pin{flex:1;overflow-y:auto;padding:26px 22px}
-.kick{font-size:11px;letter-spacing:2.6px;color:var(--cyan);font-weight:700}
-h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
-.pin p{font-size:15px;color:var(--dim);margin-bottom:15px}
-.pin ol{margin:0 18px 20px 0;padding:0;font-size:15px}
-.pin ol li{margin-bottom:9px}
-.pfoot{flex:0 0 auto;padding:12px 14px calc(12px + var(--sb));display:flex;gap:9px}
-
-.sheet{position:fixed;inset:0;background:rgba(5,12,20,.74);display:none;z-index:40;align-items:flex-end}
+/* sheet */
+.sheet{position:fixed;inset:0;background:rgba(5,12,20,.72);display:none;z-index:40;
+  align-items:flex-end;padding-bottom:var(--safe-b)}
 .sheet.on{display:flex}
-.card{background:var(--panel);width:100%;border-radius:16px 16px 0 0;padding:20px 20px calc(22px + var(--sb));
+.card{background:var(--panel);width:100%;border-radius:16px 16px 0 0;padding:20px 20px 24px;
   border-top:1px solid var(--edge);max-height:84vh;overflow-y:auto}
-.card .ic{font-size:29px}
-.card h3{font-size:20px;font-weight:700;margin:7px 0 3px}
-.card .loc{font-size:13px;color:var(--faint);margin-bottom:15px}
+.card .ic{font-size:30px}
+.card h3{font-size:20px;font-weight:700;margin:8px 0 3px}
+.card .loc{font-size:13px;color:var(--faint);margin-bottom:16px}
 .task{border:1px solid var(--edge);border-radius:10px;padding:12px 13px;margin-bottom:9px;background:var(--panel2)}
-.task .r{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.task .top{display:flex;align-items:center;gap:9px;margin-bottom:5px}
 .task .freq{font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid var(--edge);color:var(--dim)}
 .task .nm{font-weight:600;font-size:15px}
 .task .due{margin-inline-start:auto;font-size:12px;font-weight:700}
-.d-now{color:var(--red)}.d-soon{color:var(--amber)}.d-ok{color:var(--green)}
+.d-now{color:var(--red)} .d-soon{color:var(--amber)} .d-ok{color:var(--green)}
 .task p{font-size:13px;color:var(--dim);margin:0}
 
-.alert{position:fixed;left:12px;right:12px;top:calc(var(--st) + 56px);z-index:60;
-  background:#1A1116;border:1px solid var(--red);border-radius:12px;padding:14px 15px;display:none;
-  box-shadow:0 12px 34px rgba(0,0,0,.65)}
-.alert.on{display:block;animation:drop .28s ease-out}
+/* alert demo */
+.alert{position:fixed;left:14px;right:14px;top:calc(var(--safe-t) + 60px);z-index:60;
+  background:#1A1116;border:1px solid var(--red);border-radius:12px;padding:14px 15px;
+  display:none;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.alert.on{display:block;animation:drop .3s ease-out}
 @keyframes drop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
-.alert .h{display:flex;gap:9px;font-weight:700;color:var(--red);font-size:15px;margin-bottom:5px}
-.alert p{font-size:13.5px;margin:0 0 10px}
+.alert .h{display:flex;align-items:center;gap:9px;font-weight:700;color:var(--red);font-size:15px;margin-bottom:5px}
+.alert p{font-size:13.5px;color:var(--ink);margin:0 0 10px}
 .alert .row{display:flex;gap:8px}
-.alert button{padding:9px 13px;font-size:13.5px;flex:1}
+.alert button{padding:9px 13px;font-size:13.5px;border-radius:8px;flex:1}
 
-.sum{background:var(--panel2);border:1px solid var(--edge);border-radius:12px;padding:15px;margin-bottom:18px}
+/* finish */
+.fin{padding:26px 22px;overflow-y:auto;text-align:center}
+.fin .big{font-size:25px;font-weight:700;line-height:1.2;margin:10px 0 12px}
+.fin p{font-size:15px;color:var(--dim);margin-bottom:18px}
+.sum{background:var(--panel2);border:1px solid var(--edge);border-radius:12px;padding:16px;margin-bottom:20px;text-align:right}
 .sum .r{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:14px}
 .sum .r:last-child{border-bottom:none}
 .sum .r b{color:var(--cyan)}
-.cta{background:var(--panel2);border:1px solid var(--cyan);border-radius:12px;padding:17px}
+.cta{background:var(--panel2);border:1px solid var(--cyan);border-radius:12px;padding:18px;text-align:right}
 .cta h3{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--cyan)}
-.cta p{font-size:13.5px;color:var(--dim);margin-bottom:13px}
+.cta p{font-size:13.5px;color:var(--dim);margin-bottom:14px}
 .cta input{width:100%;background:var(--navy);border:1px solid var(--edge);border-radius:8px;
   padding:12px;color:var(--ink);font:inherit;font-size:15px;margin-bottom:9px}
-.note{font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.5;padding-bottom:20px}
-.warn{background:rgba(224,160,46,.1);border:1px solid var(--amber);border-radius:10px;
-  padding:12px 13px;font-size:13.5px;margin-bottom:14px}
+.note{font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.5}
+input[type=file]{display:none}
 </style>
 </head>
 <body>
 
-<video id="cam" playsinline muted autoplay></video>
-<div id="world"></div>
-<div class="cross" id="cross"></div>
-
-<div class="top">
-  <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה · <span id="bld"></span></div></div>
-  <div class="hud" id="hud" style="pointer-events:auto"></div>
-  <button id="cpy" style="pointer-events:auto;margin-inline-start:8px;padding:7px 10px;
-    font-size:11.5px;border-radius:7px;background:rgba(28,41,55,.92);color:#E8EEF4;
-    border:1px solid #2B3B4C">העתק אבחון</button>
+<div class="bar">
+  <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה אינטראקטיבית</div></div>
+  <div class="step" id="step">שלב 1</div>
 </div>
 
-<div class="panel on" id="p1">
-  <div class="pin">
+<!-- ══ 1 INTRO ══ -->
+<section class="screen on" id="s1">
+  <div class="intro">
     <div class="kick">60 שניות</div>
-    <h1>הסימון נשאר במקום — גם כשאתם זזים</h1>
-    <p>ההדגמה משתמשת במצפן, בג׳ירוסקופ ובספירת צעדים של הטלפון שלכם —
-       בדיוק העיקרון שעליו עובדת המערכת באתר.</p>
+    <h1>תראו איך המערכת מחזיקה את היד לצוות שלכם</h1>
+    <p>במקום להסביר — תנסו. ההדגמה רצה על הטלפון שלכם, כאן ועכשיו.</p>
     <ol>
-      <li>כוונו את המצלמה לציוד, בחרו אותו, והקישו ״הנח כאן״.</li>
-      <li>הסתובבו והתרחקו — הסימון יישאר בדיוק במקום שהנחתם.</li>
-      <li>התקרבו אליו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
-      <li>התרחקו בלי לבצע — ותקבלו את ההתראה שהמערכת שולחת בשטח.</li>
+      <li>צלמו את החלל שאתם עומדים בו — או בחרו תמונה.</li>
+      <li>סמנו עליה ציוד: שירותים, מראה, שנאי, מטף, מזגן.</li>
+      <li>לחצו על סימון וראו אילו משימות תלויות בו ומתי.</li>
     </ol>
-    <div class="warn" id="warn" style="display:none">
-      <b>לא התקבלה גישה לחיישני התנועה.</b><br>
-      באייפון: הגדרות ← אפליקציות ← Safari ← גלילה למטה ← <b>Motion &amp; Orientation Access</b> — להפעיל,
-      ואז לרענן את הדף ולנסות שוב.
-      <div style="display:flex;gap:8px;margin-top:11px">
-        <button class="pri" id="retry" style="padding:10px 12px;font-size:14px">נסו שוב</button>
-        <button class="sec" id="manual" style="padding:10px 12px;font-size:14px">המשיכו במצב מודרך</button>
-      </div>
-      <div id="diag" style="margin-top:9px;font-size:11.5px;opacity:.75;direction:ltr;text-align:left"></div>
-    </div>
-    <p style="font-size:13.5px">אין התקנה ואין הרשמה. הווידאו נשאר במכשיר ואינו נשלח לשום מקום.</p>
+    <p style="font-size:13.5px">אין התקנה, אין הרשמה, ושום תמונה לא נשמרת ולא נשלחת לשום מקום.</p>
   </div>
-  <div class="pfoot"><button class="pri" id="start">הפעילו מצלמה וחיישנים</button></div>
-</div>
-
-<div class="bottom" id="ctl" style="display:none">
-  <div class="lbl" id="ctlLbl">בחרו ציוד, כוונו אליו, והקישו ״הנח כאן״</div>
-  <div class="chips" id="chips"></div>
   <div class="acts">
-    <button class="pri" id="place" disabled>הנח כאן</button>
-    <button class="sec" id="done" disabled>סיום</button>
+    <label class="pri" style="text-align:center" for="cam">צלמו את החלל</label>
+    <input type="file" id="cam" accept="image/*" capture="environment">
+    <button class="sec" id="demo">דלגו — השתמשו בחדר לדוגמה</button>
   </div>
-</div>
+</section>
 
-<div class="panel" id="p3">
-  <div class="pin">
+<!-- ══ 2 PLACE ══ -->
+<section class="screen" id="s2">
+  <div class="stage" id="stage">
+    <img id="photo" alt="">
+    <div class="hint" id="hint">בחרו ציוד למטה, ואז הקישו על המקום שלו בתמונה</div>
+  </div>
+  <div class="picker">
+    <div class="lbl">בחרו ציוד ואז הקישו על התמונה</div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <div class="acts">
+    <button class="pri" id="next" disabled>סיימתי — מה המערכת תעשה</button>
+    <button class="sec" id="undo">בטל</button>
+  </div>
+</section>
+
+<!-- ══ 3 FINISH ══ -->
+<section class="screen" id="s3">
+  <div class="fin">
     <div class="kick">זה מה שהמערכת תעשה</div>
-    <h1>מעכשיו אף אחד לא צריך לזכור את זה</h1>
+    <div class="big">מעכשיו אף אחד לא צריך לזכור את זה</div>
+    <p>הנה מה שבניתם בדקה אחת — בלי להגדיר כלום.</p>
     <div class="sum" id="sum"></div>
     <div class="cta">
       <h3>סקר אתר — ללא עלות</h3>
       <p>נגיע לאחד הבניינים שלכם ונמפה את זה באמת: נקודות בקרה, נקודות סיור ומשימות לכל בעל תפקיד.</p>
       <input id="nm" placeholder="שם">
       <input id="co" placeholder="חברה">
-      <input id="bd" placeholder="כמה בניינים אתם מנהלים?" inputmode="numeric">
       <input id="ph" placeholder="טלפון" inputmode="tel">
-      <button class="pri" id="send" style="width:100%">שלחו בוואטסאפ — ונחזור מחר</button>
-      <div id="fb" style="display:none;font-size:12.5px;color:var(--dim);margin-top:11px;line-height:1.6"></div>
+      <button class="pri" id="send" style="width:100%">קבעו לי סקר</button>
     </div>
-    <div class="note">FOCUS HLS בע״מ · ההדגמה מקומית בלבד.</div>
+    <div class="note">FOCUS HLS בע״מ · ההדגמה מקומית בלבד. התמונה נשארת במכשיר ואינה נשלחת.</div>
   </div>
-</div>
+</section>
 
+<!-- alert -->
 <div class="alert" id="alert">
-  <div class="h"><span>⚠</span><span>התרחקת — משימה לא בוצעה</span></div>
+  <div class="h"><span>⚠</span><span>יצאת מהחדר — משימה לא בוצעה</span></div>
   <p id="alertTxt"></p>
   <div class="row">
     <button class="pri" id="aFix">חוזר להשלים</button>
@@ -190,503 +187,162 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
   </div>
 </div>
 
-<textarea id="dump" readonly style="display:none;position:fixed;inset:12% 6% auto 6%;z-index:90;
-  height:60%;background:#0A1628;color:#E8EEF4;border:1px solid #38E1FF;border-radius:10px;
-  padding:12px;font:11px/1.45 monospace;direction:ltr" onclick="this.select()"></textarea>
+<!-- sheet -->
 <div class="sheet" id="sheet"><div class="card" id="sheetCard"></div></div>
 
 <script>
-/* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v17';
-const CFG = {
-  wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
-  mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
-  ev:   'CBRE 18.11'               // שם האירוע — מזהה מאיפה הגיע הליד
-};
-/* ======================================== */
 const ITEMS=[
- {id:'wc', ic:'🚻', nm:'שירותים', tasks:[
-   {t:'ניקיון יסודי',f:'פעמיים ביום',d:'now',p:'כולל חידוש מתכלים ובדיקת ניקוזים.'},
-   {t:'בדיקת דליפות',f:'שבועי',d:'soon',p:'מתחת לכיור ובחיבורי האסלה.'}]},
- {id:'mir',ic:'🪞',nm:'מראה',tasks:[
-   {t:'ניקוי וליטוש',f:'שבועי',d:'soon',p:'ללא סימני מים בקצוות.'}]},
- {id:'trf',ic:'⚡',nm:'שנאי מרכזי',tasks:[
-   {t:'החלפת שמן',f:'כל 3 שנים',d:'ok',p:'כולל דגימה ובדיקת בידוד לפני ההחלפה.'},
-   {t:'בדיקה תרמוגרפית',f:'שנתי',d:'soon',p:'צילום חום בחיבורים תחת עומס.'}]},
- {id:'ext',ic:'🧯',nm:'מטף כיבוי',tasks:[
-   {t:'בדיקה חזותית',f:'חודשי',d:'now',p:'לחץ, פלומבה, גישה פנויה ושילוט.'},
-   {t:'בדיקה שנתית',f:'שנתי',d:'ok',p:'על ידי בודק מוסמך, עם תווית.'}]},
- {id:'hvc',ic:'❄',nm:'מזגן',tasks:[
-   {t:'ניקוי מסננים',f:'חודשי',d:'soon',p:'שטיפה וייבוש לפני החזרה.'},
-   {t:'טיפול מקיף',f:'שנתי',d:'ok',p:'לפני תחילת הקיץ.'}]},
- {id:'elv',ic:'🛗',nm:'מעלית',tasks:[
-   {t:'בדיקת בודק מוסמך',f:'חצי שנתי',d:'soon',p:'כולל תיעוד בפנקס המעלית.'}]},
- {id:'pmp',ic:'🔧',nm:'משאבה',tasks:[
-   {t:'הפעלת ניסיון',f:'שבועי',d:'now',p:'5 דקות, בדיקת לחץ ורעש חריג.'}]},
- {id:'lgt',ic:'💡',nm:'תאורת חירום',tasks:[
-   {t:'בדיקת גיבוי',f:'חודשי',d:'soon',p:'ניתוק זרם ווידוא הדלקה.'}]},
+ {id:'wc',  ic:'🚻', nm:'שירותים', tasks:[
+   {t:'ניקיון יסודי', f:'פעמיים ביום', d:'now',  p:'כולל חידוש מתכלים ובדיקת ניקוזים.'},
+   {t:'בדיקת דליפות', f:'שבועי',      d:'soon', p:'מתחת לכיור ובחיבורי האסלה.'}]},
+ {id:'mir', ic:'🪞', nm:'מראה', tasks:[
+   {t:'ניקוי וליטוש', f:'שבועי', d:'soon', p:'ללא סימני מים בקצוות.'}]},
+ {id:'trf', ic:'⚡', nm:'שנאי מרכזי', tasks:[
+   {t:'החלפת שמן',      f:'כל 3 שנים', d:'ok',   p:'כולל דגימה ובדיקת בידוד לפני ההחלפה.'},
+   {t:'בדיקה תרמוגרפית', f:'שנתי',      d:'soon', p:'צילום חום בחיבורים תחת עומס.'}]},
+ {id:'ext', ic:'🧯', nm:'מטף כיבוי', tasks:[
+   {t:'בדיקה חזותית', f:'חודשי', d:'now', p:'לחץ, פלומבה, גישה פנויה ושילוט.'},
+   {t:'בדיקה שנתית',  f:'שנתי',  d:'ok',  p:'על ידי בודק מוסמך, עם תווית.'}]},
+ {id:'hvc', ic:'❄', nm:'מזגן', tasks:[
+   {t:'ניקוי מסננים', f:'חודשי', d:'soon', p:'שטיפה וייבוש לפני החזרה.'},
+   {t:'טיפול מקיף',   f:'שנתי',  d:'ok',   p:'לפני תחילת הקיץ.'}]},
+ {id:'elv', ic:'🛗', nm:'מעלית', tasks:[
+   {t:'בדיקת בודק מוסמך', f:'חצי שנתי', d:'soon', p:'כולל תיעוד בפנקס המעלית.'}]},
+ {id:'pmp', ic:'🔧', nm:'משאבה', tasks:[
+   {t:'הפעלת ניסיון', f:'שבועי', d:'now', p:'5 דקות, בדיקת לחץ ורעש חריג.'}]},
+ {id:'lgt', ic:'💡', nm:'תאורת חירום', tasks:[
+   {t:'בדיקת גיבוי', f:'חודשי', d:'soon', p:'ניתוק זרם ווידוא הדלקה.'}]},
 ];
 const DUE={now:'דורש טיפול',soon:'מתקרב',ok:'בתוקף'};
+
+let sel=null, pins=[], usedDemo=false;
 const $=id=>document.getElementById(id);
-if($('bld')) $('bld').textContent = BUILD;
 
-let sel=null, marks=[], ux=0, uy=0, head=0, pitch=0, steps=0, haveOri=false, manual=false, running=false;
-let permOri='—', permMot='—', oriCount=0, motCount=0, hasCompass=false;
-let headS=0, pitchS=0, uxS=0, uyS=0, headSrc=null, oriSeen=false;
-let evtSrc=null, dbg=false, headRawLast=0, jitter=0, bestQ=0;
-// Guided mode: the same story with no compass at all. Distance is driven by
-// detected motion, so there is nothing that can drift.
-let mode='sensor', gDist=2.6, gStage=0, gLast=0, gPeak=0;
-let trace=[], tLast=0, logLast=0;
-let peaks=[], walking=false;
-// Adaptive filter: heavy damping while nearly still (that is noise),
-// light damping while actually turning (that is the user).
-const K_MIN=0.14, K_MAX=0.70, K_SPAN=8;   // degrees of change that counts as a real turn
-const SM_POS=0.22, MAXRATE=600;            // deg/sec, a spike guard only
-const Q = new URLSearchParams(location.search);
-let HFOV = parseFloat(Q.get('hfov')) || 62;       // the original value, ?hfov= to tune
-let VFOV = parseFloat(Q.get('vfov')) || 100;      // the original value
-const NEAR=1.6, FAR=3.0, PLACE_D=2.6;
-let STEPLEN = parseFloat(Q.get('steplen')) || 0.65; // ?steplen=0.72
-let roll = 0, camInfo = '-';
-
+/* chips */
 ITEMS.forEach(it=>{
   const c=document.createElement('div');
   c.className='chip'; c.dataset.id=it.id;
-  c.innerHTML='<span>'+it.ic+'</span>'+it.nm;
-  c.onclick=function(){
-    document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel');});
-    c.classList.add('sel'); sel=it.id; $('place').disabled=false;
+  c.innerHTML=`<span>${it.ic}</span>${it.nm}`;
+  c.onclick=()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel'); sel=it.id;
+    $('hint').textContent='הקישו על המקום של '+it.nm+' בתמונה';
   };
   $('chips').appendChild(c);
 });
 
-function askSensors(){
-  var O=(typeof DeviceOrientationEvent!=='undefined')?DeviceOrientationEvent:null;
-  var M=(typeof DeviceMotionEvent!=='undefined')?DeviceMotionEvent:null;
-  var needO = !!(O && O.requestPermission);
-  var needM = !!(M && M.requestPermission);
-
-  function motionStep(){
-    if(!needM){ permMot='n/a'; hookMotion(); return; }
-    try{
-      M.requestPermission().then(function(r){
-        permMot=r; if(r==='granted') hookMotion();
-      }).catch(function(err){ permMot='err'; });
-    }catch(e){ permMot='throw'; }
-  }
-
-  if(!needO){
-    permOri='n/a'; hookOri(); motionStep(); return;
-  }
-  // iOS rejects a second prompt while the first dialog is open -> chain them.
-  try{
-    O.requestPermission().then(function(r){
-      permOri=r;
-      if(r==='granted') hookOri();
-      motionStep();
-    }).catch(function(err){ permOri='err'; motionStep(); });
-  }catch(e){ permOri='throw'; motionStep(); }
+function show(n){
+  ['s1','s2','s3'].forEach((s,i)=>$(s).classList.toggle('on',i===n-1));
+  $('step').textContent='שלב '+n;
 }
 
-$('start').onclick=function(){
-  askSensors();      // first, inside the gesture
-  startCamera();
-  openStage();
+/* photo */
+$('cam').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ $('photo').src=ev.target.result; show(2); };
+  r.readAsDataURL(f);
+});
+$('demo').onclick=()=>{
+  usedDemo=true;
+  $('photo').src='data:image/svg+xml;utf8,'+encodeURIComponent(roomSVG());
+  show(2);
 };
 
-$('retry').onclick=function(){
-  oriHooked=false; motHooked=false;
-  askSensors();
-  setTimeout(function(){
-    if(haveOri){ $('warn').style.display='none'; $('p1').classList.remove('on'); }
-    else diag();
-  },1800);
-};
-
-function goGuided(){
-  if(mode==='guided') return;
-  mode='guided'; manual=false;
-  if(marks.length){
-    var m0=marks[0];
-    m0.sx = window.innerWidth/2; m0.sy = window.innerHeight*0.46;
-    gStage=1; gDist=PLACE_D; gPeak=Date.now(); gLast=0;
-    $('place').disabled=true;
-    $('ctlLbl').textContent='עכשיו התרחקו כמה צעדים מהציוד';
-  }
-  $('warn').style.display='none';
-  $('p1').classList.remove('on');
-  $('ctl').style.display='block';
-  $('cross').classList.add('on');
-  $('ctlLbl').textContent='בחרו ציוד, כוונו אליו והקישו ״הנח כאן״';
-  if(!running){ running=true; requestAnimationFrame(loop); }
-}
-$('manual').onclick=goGuided;
-
-function measureFov(){
-  var v=$('cam'), vw=v.videoWidth, vh=v.videoHeight;
-  var cw=v.clientWidth, ch=v.clientHeight;
-  if(!vw||!vh||!cw||!ch){ camInfo='no-dims'; return; }
-  // object-fit: cover — work out which part of the frame is actually on screen
-  var sc=Math.max(cw/vw, ch/vh);
-  var visW=cw/sc, visH=ch/sc;                   // visible slice, in video pixels
-  // pinhole model: the nominal figure describes the frame's LONG side
-  var nominal = parseFloat(Q.get('hfov')) || 67;
-  var longPx  = Math.max(vw, vh);
-  var focal   = (longPx/2) / Math.tan(nominal*Math.PI/360);
-  var hv = 2*Math.atan((visW/2)/focal)*180/Math.PI;
-  var vv = 2*Math.atan((visH/2)/focal)*180/Math.PI;
-  // a bad measurement must never wreck the experience
-  HFOV = Math.max(30, Math.min(90, hv));
-  VFOV = Math.max(30, Math.min(130, vv));
-  camInfo = vw+'x'+vh+' box'+cw+'x'+ch+' raw'+hv.toFixed(1)+'/'+vv.toFixed(1)+' use'+HFOV.toFixed(1)+'/'+VFOV.toFixed(1);
+function roomSVG(){
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560">
+  <rect width="400" height="560" fill="#13212C"/>
+  <rect x="28" y="60" width="344" height="300" fill="#1B2D3B" stroke="#2B3B4C"/>
+  <rect x="28" y="360" width="344" height="160" fill="#16252F" stroke="#2B3B4C"/>
+  <rect x="60" y="100" width="90" height="120" fill="#223646" stroke="#2B3B4C"/>
+  <rect x="180" y="110" width="60" height="80" fill="#223646" stroke="#2B3B4C"/>
+  <rect x="268" y="96" width="72" height="150" fill="#223646" stroke="#2B3B4C"/>
+  <rect x="80" y="258" width="140" height="70" fill="#1F3243" stroke="#2B3B4C"/>
+  <rect x="250" y="268" width="90" height="60" fill="#1F3243" stroke="#2B3B4C"/>
+  <text x="200" y="545" fill="#5E7085" font-size="15" text-anchor="middle"
+    font-family="Arial">חדר שירות לדוגמה</text></svg>`;
 }
 
-function startCamera(){
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
-  navigator.mediaDevices.getUserMedia({video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:1920}, height:{ideal:1080},
-      frameRate:{ideal:30}
-    },audio:false})
-    .then(function(st){ $('cam').srcObject=st; return $('cam').play(); })
-    // no auto-measure: the original fixed values tracked better in practice
-    .catch(function(e){ camInfo = 'ERR:'+(e && e.name || 'unknown'); });
-}
-
-function openStage(){
-  $('p1').classList.remove('on');
-  $('ctl').style.display='block';
-  $('cross').classList.add('on');
-  if(!running){ running=true; requestAnimationFrame(loop); }
-  setTimeout(function(){
-    if(mode==='guided') return;
-    if(!haveOri){ diag(); $('warn').style.display='block'; $('p1').classList.add('on'); }
-  },4200);
-}
-
-function diag(){
-  var d=$('diag'); if(!d) return;
-  d.textContent='אבחון: כיוון='+permOri+' · תנועה='+permMot+
-    ' · אירועי כיוון='+oriCount+' · אירועי תנועה='+motCount+
-    ' · מקור כיוון='+(headSrc||'—');
-}
-
-// How trustworthy is this event's heading?
-//  3 = iOS true compass   2 = absolute (true north)   1 = relative, drifts
-function oriQuality(e){
-  if(e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) return 3;
-  if(e.type==='deviceorientationabsolute' || e.absolute===true) return 2;
-  return 1;
-}
-
-function onOri(e){
-  var c = (e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) ? e.webkitCompassHeading : null;
-  var al = (e.alpha!=null && !isNaN(e.alpha)) ? (360-e.alpha) : null;
-  var bt = (e.beta!=null && !isNaN(e.beta)) ? e.beta : null;
-  if(c==null && al==null && bt==null) return;     // empty event, ignore it
-  if(!evtSrc) evtSrc = e.type;
-  if(e.type !== evtSrc) return;          // <-- the only guard. Without it: 150 deg of flicker.
-  oriCount++;
-  if(!headSrc) headSrc = (c!=null) ? 'compass' : 'alpha';
-  bestQ = (c!=null) ? 3 : 2;
-  var a2 = (c!=null) ? c : al;
-  if(a2!=null){
-    var nh=((a2%360)+360)%360;
-    var dd=nh-headRawLast; while(dd>180)dd-=360; while(dd<-180)dd+=360;
-    jitter = jitter*0.9 + Math.abs(dd)*0.1; headRawLast = nh;
-    head = nh; headS = nh;                        // no smoothing, as in the original
-    haveOri = true;
-  }
-  if(bt!=null){ pitch=Math.max(-80,Math.min(80,bt-90)); pitchS=pitch; haveOri=true; }
-}
-var oriHooked=false;
-function hookOri(){
-  if(oriHooked) return; oriHooked=true;
-  window.addEventListener('deviceorientation',onOri,true);
-  window.addEventListener('deviceorientationabsolute',onOri,true);
-}
-
-var lp=9.81, lastStep=0, motHooked=false;
-var grav=9.81, armed=false, hpMin=0, hpMax=0;
-function hookMotion(){
-  if(motHooked) return; motHooked=true;
-  window.addEventListener('devicemotion',function(e){
-    motCount++;
-    var a=e.accelerationIncludingGravity; if(!a) return;
-    var m=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
-    lp = lp*0.88 + m*0.12;                        // the original baseline
-    var hp = m - lp;
-    grav = lp;
-    if(hp>hpMax) hpMax=hp; if(hp<hpMin) hpMin=hp;
-    var now=Date.now();
-    if(hp > 1.9 && now-lastStep>330){              // the original threshold
-      lastStep=now;
-      lastStep=now; gPeak=now; steps++; walking=true;
-      if(mode==='guided'){ gDist += (gStage===1 ? 0.55 : (gStage===3 ? -0.55 : 0)); }
-      var r=head*Math.PI/180;
-      ux+=STEPLEN*Math.sin(r); uy+=STEPLEN*Math.cos(r);
-      uxS=ux; uyS=uy;                              // no position smoothing
-    }
-    if(Date.now()-lastStep>1500) walking=false;
-  },true);
-}
-
-document.addEventListener('click',function(e){
-  if(!manual || !sel) return;
-  if(e.target.closest('.bottom')||e.target.closest('.panel')||e.target.closest('.sheet')||e.target.closest('.alert')) return;
-  placeAt(e.clientX,e.clientY);
-},true);
-
-function placeAt(px,py){
-  var W=window.innerWidth,H=window.innerHeight;
-  head = ((px-W/2)/W)*HFOV;  headS = head;
-  pitch = -((py-H/2)/H)*VFOV; pitchS = pitch;
-  doPlace();
-}
-
-$('place').onclick=function(){ doPlace(); };
-
-function doPlace(){
+/* place pins */
+$('stage').addEventListener('click',e=>{
   if(!sel) return;
-  var it=ITEMS.find(function(i){return i.id===sel;});
-  var r=headS*Math.PI/180;
-  var m={it:it,
-    x:uxS+PLACE_D*Math.sin(r), y:uyS+PLACE_D*Math.cos(r),
-    el0:pitchS, was:false,
-    tasks:it.tasks.map(function(t){return Object.assign({},t);})};
-  m.sx = window.innerWidth/2; m.sy = window.innerHeight*0.46;
-  var el=document.createElement('div');
-  el.className='mk';
-  el.innerHTML='<div class="dot"></div><div class="tag"></div>';
-  $('world').appendChild(el); m.el_=el;
-  marks.push(m);
-  if(mode==='guided'){
-    gStage=1; gDist=PLACE_D; gPeak=Date.now();
-    $('place').disabled=true;
-    $('ctlLbl').textContent='עכשיו התרחקו כמה צעדים מהציוד';
-    return;
-  }
-  $('done').disabled=false;
-  $('ctlLbl').textContent='הסתובבו והתרחקו — הסימון יישאר במקום';
-  if(marks.length===1) setTimeout(function(){openSheet(m);},450);
-}
+  const r=$('stage').getBoundingClientRect();
+  const x=((e.clientX-r.left)/r.width)*100, y=((e.clientY-r.top)/r.height)*100;
+  const it=ITEMS.find(i=>i.id===sel);
+  const worst=it.tasks.some(t=>t.d==='now')?'now':(it.tasks.some(t=>t.d==='soon')?'soon':'ok');
+  const col=worst==='now'?'#E5484D':(worst==='soon'?'#E0A02E':'#3FB984');
+  const p=document.createElement('div');
+  p.className='pin'+(worst==='now'?' due':'');
+  p.style.cssText=`right:${x}%;top:${y}%;background:${col}`;
+  p.innerHTML=it.ic+(worst==='now'?'<b>!</b>':'');
+  p.onclick=ev=>{ev.stopPropagation();openSheet(it);};
+  $('stage').appendChild(p);
+  pins.push({el:p,it});
+  $('hint').style.display='none';
+  $('next').disabled=false;
+  if(pins.length===1) setTimeout(()=>openSheet(it),260);
+  if(pins.length===2) setTimeout(fakeAlert,900);
+});
 
-function norm(d){ while(d>180)d-=360; while(d<-180)d+=360; return d; }
+$('undo').onclick=()=>{
+  const last=pins.pop(); if(!last) return;
+  last.el.remove();
+  if(!pins.length){ $('hint').style.display='flex'; $('next').disabled=true; }
+};
 
-function sm(cur,tgt,k){ var d=tgt-cur; while(d>180)d-=360; while(d<-180)d+=360; return cur+d*k; }
-
-function guidedStep(){
-  var now=Date.now();
-  if(now-gPeak>700 && now-gLast>200){       // never dead-end if the phone is still
-    gLast=now; gDist += (gStage===1 ? 0.22 : (gStage===3 ? -0.22 : 0));
-  }
-  gDist = Math.max(0.5, Math.min(9, gDist));
-  var m = marks[0]; if(!m) return;
-
-  if(gStage===1 && gDist>FAR){
-    gStage=2;
-    var t=m.tasks.find(function(t){return t.d==='now';}) || m.tasks[0];
-    fireAlert(m,t);
-    $('ctlLbl').textContent='זו ההתראה שהעובד מקבל בשטח — עכשיו חזרו אל הציוד';
-  } else if(gStage===2 && !$('alert').classList.contains('on')){
-    gStage=3;
-  } else if(gStage===3 && gDist<NEAR){
-    gStage=4;
-    if(!$('sheet').classList.contains('on')) openSheet(m);
-    $('done').disabled=false;
-    $('ctlLbl').textContent='המערכת זיהתה שחזרתם — הקישו סיום';
-  }
-
-  var el=m.el_;
-  el.style.display='flex';
-  var sc=Math.max(.5,Math.min(1.7,2.4/Math.max(gDist,.6)));
-  el.style.left='0px'; el.style.top='0px';
-  el.style.transform='translate('+m.sx.toFixed(1)+'px,'+m.sy.toFixed(1)+'px) translate(-50%,-50%) scale('+sc.toFixed(2)+')';
-  var worst = m.tasks.some(function(t){return t.d==='now';}) ? 'now'
-            : (m.tasks.some(function(t){return t.d==='soon';}) ? 'soon' : 'ok');
-  var col = worst==='now' ? '#E5484D' : (worst==='soon' ? '#E0A02E' : '#3FB984');
-  var dot=el.querySelector('.dot');
-  dot.style.background=col;
-  dot.innerHTML=m.it.ic+(worst==='now'?'<b>!</b>':'');
-  el.querySelector('.tag').innerHTML=m.it.nm+' · <em>'+gDist.toFixed(1)+' מ׳</em>';
-  el.classList.toggle('near',gDist<NEAR&&worst!=='now');
-  el.classList.toggle('due',gDist<NEAR&&worst==='now');
-  $('hud').innerHTML = BUILD+' · מודרך · שלב '+gStage+'<br><b>'+gDist.toFixed(1)+'</b> מ׳ מהציוד';
-}
-
-function loop(){
-  var W=window.innerWidth,H=window.innerHeight;
-  if(mode==='guided'){ guidedStep(); requestAnimationFrame(loop); return; }
-  headS = head; pitchS = pitch; uxS = ux; uyS = uy;   // raw, as in the original
-  marks.forEach(function(m){
-    var dx=m.x-uxS, dy=m.y-uyS;
-    var dist=Math.sqrt(dx*dx+dy*dy);
-    var brg=Math.atan2(dx,dy)*180/Math.PI;
-    var dAz=norm(brg-headS);
-    var el=m.el_;
-    if(Math.abs(dAz)>HFOV*0.85){ el.style.display='none'; }
-    else{
-      el.style.display='flex';
-      var px = W/2 + (dAz/HFOV)*W;
-      var py = H/2 - ((m.el0-pitchS)/VFOV)*H;
-      var sc=Math.max(.52,Math.min(1.7,2.4/Math.max(dist,.6)));
-      el.style.left='0px'; el.style.top='0px';
-      el.style.transform='translate('+(px).toFixed(1)+'px,'+(py).toFixed(1)+'px) translate(-50%,-50%) scale('+sc.toFixed(2)+')';
-      var worst = m.tasks.some(function(t){return t.d==='now';}) ? 'now'
-                : (m.tasks.some(function(t){return t.d==='soon';}) ? 'soon' : 'ok');
-      var col = worst==='now' ? '#E5484D' : (worst==='soon' ? '#E0A02E' : '#3FB984');
-      var dot=el.querySelector('.dot');
-      dot.style.background=col;
-      dot.innerHTML=m.it.ic+(worst==='now'?'<b>!</b>':'');
-      el.querySelector('.tag').innerHTML=m.it.nm+' · <em>'+(dist<10?dist.toFixed(1):Math.round(dist))+' מ׳</em>';
-      el.classList.toggle('near',dist<NEAR&&worst!=='now');
-      el.classList.toggle('due',dist<NEAR&&worst==='now');
-    }
-    if(dist<NEAR){
-      if(!m.was){ m.was=true; if(!$('sheet').classList.contains('on')) openSheet(m); }
-    }else if(dist>FAR&&m.was){
-      m.was=false;
-      var t=m.tasks.find(function(t){return t.d==='now';});
-      if(t) fireAlert(m,t);
-    }
-  });
-  $('hud').innerHTML = BUILD+' · חיישנים q'+bestQ+' · רעד '+jitter.toFixed(1)+'°<br>'
-    + '<b>'+steps+'</b> צעדים'
-    + (marks.length ? ' · <b>'+Math.hypot(marks[0].x-uxS, marks[0].y-uyS).toFixed(1)+'</b> מ׳' : '');
-  sample();
-  requestAnimationFrame(loop);
-}
-
-function sample(){
-  var now=Date.now();
-  if(now-logLast>1000){
-    logLast=now;
-    console.log('FOCUSDIAG '+BUILD
-      +' mode='+mode+' evt='+(evtSrc||'-')+' src='+(headSrc||'-')+' q='+bestQ
-      +' ori='+oriCount+' mot='+motCount
-      +' head='+head.toFixed(1)+' headS='+headS.toFixed(1)
-      +' jit='+jitter.toFixed(2)+' pitch='+pitch.toFixed(0)
-      +' steps='+steps+' walk='+(walking?1:0)+' grav='+grav.toFixed(2)+' hp['+hpMin.toFixed(2)+','+hpMax.toFixed(2)+']'
-      +' ux='+uxS.toFixed(2)+' uy='+uyS.toFixed(2)
-      +' marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2)+' fov='+HFOV.toFixed(1)+'/'+VFOV.toFixed(1)+' roll='+roll.toFixed(0)+' cam='+camInfo
-      +(marks.length?(' dist='+Math.hypot(marks[0].x-uxS,marks[0].y-uyS).toFixed(2)):''));
-    hpMin=0; hpMax=0;
-  }
-  if(now-tLast<120) return;
-  tLast=now;
-  trace.push([Math.round(now/100)%100000, +head.toFixed(1), +headS.toFixed(1),
-              +pitch.toFixed(0), steps, (walking?1:0), +gDist.toFixed(1),
-              +uxS.toFixed(2), +uyS.toFixed(2)]);
-  if(trace.length>90) trace.shift();
-}
-
-function diagText(){
-  var L=[];
-  L.push('FOCUS demo '+BUILD);
-  L.push('ua: '+navigator.userAgent);
-  L.push('mode='+mode+' evt='+(evtSrc||'-')+' src='+(headSrc||'-')+' q='+bestQ);
-  L.push('ori='+oriCount+' mot='+motCount+' haveOri='+haveOri+' jitter='+jitter.toFixed(2));
-  L.push('head='+head.toFixed(1)+' headS='+headS.toFixed(1)+' pitch='+pitch.toFixed(1));
-  L.push('steps='+steps+' walking='+walking+' lp='+lp.toFixed(2));
-  L.push('marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2));
-  if(marks.length) L.push('mark0 x='+marks[0].x.toFixed(2)+' y='+marks[0].y.toFixed(2)
-    +' dist='+Math.hypot(marks[0].x-uxS,marks[0].y-uyS).toFixed(2));
-  L.push('--- t, head, headS, pitch, steps, walk, gDist, ux, uy');
-  for(var i=0;i<trace.length;i+=3) L.push(trace[i].join(','));
-  return L.join('\n');
-}
-
-function copyDiag(){
-  var t=diagText();
-  function fallback(){
-    var b=$('dump'); b.style.display='block'; b.value=t; b.select();
-    try{ document.execCommand('copy'); }catch(e){}
-  }
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(function(){
-      $('cpy').textContent='הועתק ✓'; setTimeout(function(){$('cpy').textContent='העתק אבחון';},1800);
-    }).catch(fallback);
-  } else fallback();
-}
-
-function openSheet(m){
-  $('sheetCard').innerHTML=
-    '<div class="ic">'+m.it.ic+'</div>'+
-    '<h3>'+m.it.nm+'</h3>'+
-    '<div class="loc">המערכת זיהתה שאתם כאן</div>'+
-    m.tasks.map(function(t){
-      return '<div class="task"><div class="r"><span class="nm">'+t.t+'</span>'+
-             '<span class="freq">'+t.f+'</span>'+
-             '<span class="due d-'+t.d+'">'+DUE[t.d]+'</span></div><p>'+t.p+'</p></div>';
-    }).join('')+
-    '<button class="pri" style="width:100%;margin-top:8px" id="cl">סגור</button>';
+function openSheet(it){
+  $('sheetCard').innerHTML=`
+    <div class="ic">${it.ic}</div>
+    <h3>${it.nm}</h3>
+    <div class="loc">${pins.length} סימונים בחלל הזה</div>
+    ${it.tasks.map(t=>`
+      <div class="task">
+        <div class="top">
+          <span class="nm">${t.t}</span>
+          <span class="freq">${t.f}</span>
+          <span class="due d-${t.d}">${DUE[t.d]}</span>
+        </div>
+        <p>${t.p}</p>
+      </div>`).join('')}
+    <button class="pri" style="width:100%;margin-top:8px" onclick="document.getElementById('sheet').classList.remove('on')">סגור</button>`;
   $('sheet').classList.add('on');
-  $('cl').onclick=function(){$('sheet').classList.remove('on');};
 }
-$('hud').onclick=function(){ dbg=!dbg; };
-$('cpy').onclick=copyDiag;
-$('dump').onclick=function(){ this.select(); };
-$('dump').ondblclick=function(){ this.style.display='none'; };
-$('sheet').onclick=function(e){ if(e.target.id==='sheet') $('sheet').classList.remove('on'); };
+$('sheet').onclick=e=>{ if(e.target.id==='sheet') $('sheet').classList.remove('on'); };
 
-var alertFor=null, lastSum='';
-function fireAlert(m,t){
-  alertFor={m:m,t:t};
-  $('alertTxt').innerHTML='<b>'+m.it.nm+' — '+t.t+'</b><br>'+
-    'עוד אפשר לחזור ולהשלים. אחרי שתצא מהאגף זה ייסגר כחריגה.';
+function fakeAlert(){
+  const due=pins.map(p=>p.it).find(i=>i.tasks.some(t=>t.d==='now'));
+  if(!due) return;
+  const t=due.tasks.find(t=>t.d==='now');
+  $('alertTxt').innerHTML=`<b>${due.nm} — ${t.t}</b><br>עוד אפשר לחזור ולהשלים. אחרי שתצא מהאגף זה ייסגר כחריגה.`;
   $('alert').classList.add('on');
 }
-$('aClose').onclick=function(){$('alert').classList.remove('on');};
-$('aFix').onclick=function(){
+$('aClose').onclick=()=>$('alert').classList.remove('on');
+$('aFix').onclick=()=>{
   $('alert').classList.remove('on');
-  if(alertFor){ alertFor.t.d='ok'; alertFor=null; }
+  const p=pins.find(p=>p.it.tasks.some(t=>t.d==='now'));
+  if(p){ p.el.classList.remove('due'); p.el.style.background='#3FB984';
+         p.el.innerHTML=p.it.ic; p.it.tasks.forEach(t=>{if(t.d==='now')t.d='ok';}); }
 };
 
-$('done').onclick=function(){
-  var tasks=0,daily=0,rare=0;
-  marks.forEach(function(m){
-    tasks+=m.tasks.length;
-    m.tasks.forEach(function(t){
-      if(t.f.indexOf('ביום')>-1) daily++;
-      if(t.f.indexOf('שנים')>-1||t.f.indexOf('שנתי')>-1) rare++;
-    });
-  });
-  $('sum').innerHTML=
-    '<div class="r"><span>ציוד שסימנתם</span><b>'+marks.length+'</b></div>'+
-    '<div class="r"><span>משימות שנגזרו מהן</span><b>'+tasks+'</b></div>'+
-    '<div class="r"><span>מהן יומיומיות</span><b>'+daily+'</b></div>'+
-    '<div class="r"><span>מהן שנתיות ומעלה</span><b>'+rare+'</b></div>'+
-    '<div class="r"><span>צעדים שהמערכת ספרה</span><b>'+steps+'</b></div>'+
-    '<div class="r"><span>כמה מהן צריך לזכור</span><b>0</b></div>';
-    lastSum = marks.length+' ציודים, '+tasks+' משימות, '+steps+' צעדים';
-  $('ctl').style.display='none'; $('cross').classList.remove('on');
-  $('p3').classList.add('on');
+/* finish */
+$('next').onclick=()=>{
+  const n=pins.length;
+  const tasks=pins.reduce((a,p)=>a+p.it.tasks.length,0);
+  const daily=pins.reduce((a,p)=>a+p.it.tasks.filter(t=>t.f.includes('ביום')).length,0);
+  const rare=pins.reduce((a,p)=>a+p.it.tasks.filter(t=>t.f.includes('שנים')||t.f.includes('שנתי')).length,0);
+  $('sum').innerHTML=`
+    <div class="r"><span>ציוד שסימנתם</span><b>${n}</b></div>
+    <div class="r"><span>משימות שנגזרו מהן</span><b>${tasks}</b></div>
+    <div class="r"><span>מהן יומיומיות</span><b>${daily}</b></div>
+    <div class="r"><span>מהן שנתיות ומעלה</span><b>${rare}</b></div>
+    <div class="r"><span>כמה מהן צריך לזכור</span><b>0</b></div>`;
+  show(3);
 };
-$('send').onclick=function(){
-  var nm=$('nm').value.trim(), co=$('co').value.trim(),
-      bd=$('bd').value.trim(), ph=$('ph').value.trim();
+$('send').onclick=()=>{
+  const nm=$('nm').value.trim(), ph=$('ph').value.trim();
   if(!nm||!ph){ alert('שם וטלפון, ונחזור אליכם מחר.'); return; }
-
-  var msg = 'סקר אתר — מההדגמה באירוע ' + CFG.ev + '\n'
-          + 'שם: ' + nm + '\n'
-          + 'חברה: ' + (co||'—') + '\n'
-          + 'בניינים: ' + (bd||'—') + '\n'
-          + 'טלפון: ' + ph
-          + (lastSum ? '\nבהדגמה: ' + lastSum : '');
-
-  var wa = 'https://wa.me/' + CFG.wa + '?text=' + encodeURIComponent(msg);
-  var mt = 'mailto:' + CFG.mail + '?subject=' + encodeURIComponent('סקר אתר — ' + CFG.ev)
-         + '&body=' + encodeURIComponent(msg);
-
-  $('fb').style.display='block';
-  $('fb').innerHTML = 'לא נפתח וואטסאפ? '
-    + '<a href="' + mt + '" style="color:var(--cyan)">שלחו במייל</a>'
-    + ' · או התקשרו '
-    + '<a href="tel:+' + CFG.wa + '" style="color:var(--cyan)" dir="ltr">+' + CFG.wa + '</a>';
-
-  $('send').textContent='נפתח וואטסאפ — רק להקיש שלח';
-  window.location.href = wa;
+  $('send').textContent='נרשם — נחזור אליכם מחר';
+  $('send').disabled=true;
 };
 </script>
 </body>
