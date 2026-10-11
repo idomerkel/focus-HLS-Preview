@@ -121,6 +121,9 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 <div class="top">
   <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה · <span id="bld"></span></div></div>
   <div class="hud" id="hud" style="pointer-events:auto"></div>
+  <button id="cpy" style="pointer-events:auto;margin-inline-start:8px;padding:7px 10px;
+    font-size:11.5px;border-radius:7px;background:rgba(28,41,55,.92);color:#E8EEF4;
+    border:1px solid #2B3B4C">העתק אבחון</button>
 </div>
 
 <div class="panel on" id="p1">
@@ -187,11 +190,14 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
   </div>
 </div>
 
+<textarea id="dump" readonly style="display:none;position:fixed;inset:12% 6% auto 6%;z-index:90;
+  height:60%;background:#0A1628;color:#E8EEF4;border:1px solid #38E1FF;border-radius:10px;
+  padding:12px;font:11px/1.45 monospace;direction:ltr" onclick="this.select()"></textarea>
 <div class="sheet" id="sheet"><div class="card" id="sheetCard"></div></div>
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v10';
+const BUILD = 'v12';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -231,6 +237,7 @@ let evtSrc=null, dbg=false, headRawLast=0, jitter=0, bestQ=0;
 // Guided mode: the same story with no compass at all. Distance is driven by
 // detected motion, so there is nothing that can drift.
 let mode='sensor', gDist=2.6, gStage=0, gLast=0, gPeak=0;
+let trace=[], tLast=0, logLast=0;
 let peaks=[], walking=false;
 // Adaptive filter: heavy damping while nearly still (that is noise),
 // light damping while actually turning (that is the user).
@@ -545,7 +552,59 @@ function loop(){
   $('hud').innerHTML = BUILD+' · חיישנים q'+bestQ+' · רעד '+jitter.toFixed(1)+'°<br>'
     + '<b>'+steps+'</b> צעדים'
     + (marks.length ? ' · <b>'+Math.hypot(marks[0].x-uxS, marks[0].y-uyS).toFixed(1)+'</b> מ׳' : '');
+  sample();
   requestAnimationFrame(loop);
+}
+
+function sample(){
+  var now=Date.now();
+  if(now-logLast>1000){
+    logLast=now;
+    console.log('FOCUSDIAG '+BUILD
+      +' mode='+mode+' evt='+(evtSrc||'-')+' src='+(headSrc||'-')+' q='+bestQ
+      +' ori='+oriCount+' mot='+motCount
+      +' head='+head.toFixed(1)+' headS='+headS.toFixed(1)
+      +' jit='+jitter.toFixed(2)+' pitch='+pitch.toFixed(0)
+      +' steps='+steps+' walk='+(walking?1:0)+' lp='+lp.toFixed(2)
+      +' ux='+uxS.toFixed(2)+' uy='+uyS.toFixed(2)
+      +' marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2)
+      +(marks.length?(' dist='+Math.hypot(marks[0].x-uxS,marks[0].y-uyS).toFixed(2)):''));
+  }
+  if(now-tLast<120) return;
+  tLast=now;
+  trace.push([Math.round(now/100)%100000, +head.toFixed(1), +headS.toFixed(1),
+              +pitch.toFixed(0), steps, (walking?1:0), +gDist.toFixed(1),
+              +uxS.toFixed(2), +uyS.toFixed(2)]);
+  if(trace.length>90) trace.shift();
+}
+
+function diagText(){
+  var L=[];
+  L.push('FOCUS demo '+BUILD);
+  L.push('ua: '+navigator.userAgent);
+  L.push('mode='+mode+' evt='+(evtSrc||'-')+' src='+(headSrc||'-')+' q='+bestQ);
+  L.push('ori='+oriCount+' mot='+motCount+' haveOri='+haveOri+' jitter='+jitter.toFixed(2));
+  L.push('head='+head.toFixed(1)+' headS='+headS.toFixed(1)+' pitch='+pitch.toFixed(1));
+  L.push('steps='+steps+' walking='+walking+' lp='+lp.toFixed(2));
+  L.push('marks='+marks.length+' gStage='+gStage+' gDist='+gDist.toFixed(2));
+  if(marks.length) L.push('mark0 x='+marks[0].x.toFixed(2)+' y='+marks[0].y.toFixed(2)
+    +' dist='+Math.hypot(marks[0].x-uxS,marks[0].y-uyS).toFixed(2));
+  L.push('--- t, head, headS, pitch, steps, walk, gDist, ux, uy');
+  for(var i=0;i<trace.length;i+=3) L.push(trace[i].join(','));
+  return L.join('\n');
+}
+
+function copyDiag(){
+  var t=diagText();
+  function fallback(){
+    var b=$('dump'); b.style.display='block'; b.value=t; b.select();
+    try{ document.execCommand('copy'); }catch(e){}
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){
+      $('cpy').textContent='הועתק ✓'; setTimeout(function(){$('cpy').textContent='העתק אבחון';},1800);
+    }).catch(fallback);
+  } else fallback();
 }
 
 function openSheet(m){
@@ -563,6 +622,9 @@ function openSheet(m){
   $('cl').onclick=function(){$('sheet').classList.remove('on');};
 }
 $('hud').onclick=function(){ dbg=!dbg; };
+$('cpy').onclick=copyDiag;
+$('dump').onclick=function(){ this.select(); };
+$('dump').ondblclick=function(){ this.style.display='none'; };
 $('sheet').onclick=function(e){ if(e.target.id==='sheet') $('sheet').classList.remove('on'); };
 
 var alertFor=null, lastSum='';
