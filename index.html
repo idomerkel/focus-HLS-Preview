@@ -24,7 +24,8 @@ body{background:#000;color:var(--ink);
   background:linear-gradient(to bottom,rgba(6,14,22,.88),rgba(6,14,22,0));display:flex;align-items:center;gap:10px}
 .top .b{font-size:14px;font-weight:700}
 .top .t{font-size:9.5px;letter-spacing:1.5px;color:var(--faint)}
-.hud{margin-inline-start:auto;text-align:left;font-size:11px;color:var(--dim);line-height:1.35}
+.hud{margin-inline-start:auto;text-align:left;font-size:11px;color:var(--dim);line-height:1.4;
+  background:rgba(6,14,22,.55);border-radius:7px;padding:4px 7px}
 .hud b{color:var(--cyan)}
 
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;
@@ -190,7 +191,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v9';
+const BUILD = 'v10';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -292,7 +293,15 @@ $('retry').onclick=function(){
 };
 
 function goGuided(){
+  if(mode==='guided') return;
   mode='guided'; manual=false;
+  if(marks.length){
+    var m0=marks[0];
+    m0.sx = window.innerWidth/2; m0.sy = window.innerHeight*0.46;
+    gStage=1; gDist=PLACE_D; gPeak=Date.now(); gLast=0;
+    $('place').disabled=true;
+    $('ctlLbl').textContent='עכשיו התרחקו כמה צעדים מהציוד';
+  }
   $('warn').style.display='none';
   $('p1').classList.remove('on');
   $('ctl').style.display='block';
@@ -452,8 +461,8 @@ function sm(cur,tgt,k){ var d=tgt-cur; while(d>180)d-=360; while(d<-180)d+=360; 
 
 function guidedStep(){
   var now=Date.now();
-  if(now-gPeak>1400 && now-gLast>260){      // never dead-end if the phone is still
-    gLast=now; gDist += (gStage===1 ? 0.16 : (gStage===3 ? -0.16 : 0));
+  if(now-gPeak>700 && now-gLast>200){       // never dead-end if the phone is still
+    gLast=now; gDist += (gStage===1 ? 0.22 : (gStage===3 ? -0.22 : 0));
   }
   gDist = Math.max(0.5, Math.min(9, gDist));
   var m = marks[0]; if(!m) return;
@@ -486,8 +495,7 @@ function guidedStep(){
   el.querySelector('.tag').innerHTML=m.it.nm+' · <em>'+gDist.toFixed(1)+' מ׳</em>';
   el.classList.toggle('near',gDist<NEAR&&worst!=='now');
   el.classList.toggle('due',gDist<NEAR&&worst==='now');
-  $('hud').innerHTML = dbg ? (BUILD+' · guided · stage '+gStage+' · d '+gDist.toFixed(2))
-    : '<b>'+gDist.toFixed(1)+'</b> מ׳ מהציוד';
+  $('hud').innerHTML = BUILD+' · מודרך · שלב '+gStage+'<br><b>'+gDist.toFixed(1)+'</b> מ׳ מהציוד';
 }
 
 function loop(){
@@ -534,9 +542,9 @@ function loop(){
       if(t) fireAlert(m,t);
     }
   });
-  $('hud').innerHTML = marks.length
-    ? '<b>'+steps+'</b> צעדים · <b>'+marks.length+'</b> סימונים'
-    : (haveOri?'חיישנים פעילים':'ממתין לחיישנים');
+  $('hud').innerHTML = BUILD+' · חיישנים q'+bestQ+' · רעד '+jitter.toFixed(1)+'°<br>'
+    + '<b>'+steps+'</b> צעדים'
+    + (marks.length ? ' · <b>'+Math.hypot(marks[0].x-uxS, marks[0].y-uyS).toFixed(1)+'</b> מ׳' : '');
   requestAnimationFrame(loop);
 }
 
