@@ -322,16 +322,21 @@ function diag(){
 }
 
 function onOri(e){
-  // Two listeners are registered; whichever event type speaks first owns the
-  // session. Letting both through means two reference frames fighting.
+  var c = (e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) ? e.webkitCompassHeading : null;
+  var al = (e.alpha!=null && !isNaN(e.alpha)) ? ((360-e.alpha)%360+360)%360 : null;
+  var bt = (e.beta!=null && !isNaN(e.beta)) ? e.beta : null;
+
+  // An event with nothing in it must never claim the lock. Browsers fire an
+  // empty deviceorientationabsolute before the sensor has anything to say.
+  if(c==null && al==null && bt==null) return;
+
+  // Lock to the first event type that actually carries data, then ignore the
+  // other one: two event types mean two reference frames fighting.
   if(!evtSrc) evtSrc = e.type;
   if(e.type !== evtSrc) return;
   oriCount++;
-  var c = (e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) ? e.webkitCompassHeading : null;
-  var al = (e.alpha!=null && !isNaN(e.alpha)) ? ((360-e.alpha)%360+360)%360 : null;
 
-  // Lock onto ONE heading source for the whole session. Mixing compass and alpha
-  // means mixing two reference frames, which makes the marker jump.
+  // Same rule for the heading source itself.
   if(!headSrc){
     if(c!=null){ headSrc='compass'; hasCompass=true; }
     else if(al!=null){ headSrc='alpha'; }
@@ -344,13 +349,10 @@ function onOri(e){
     jitter = jitter*0.9 + Math.abs(dd)*0.1;
     headRawLast = nh;
     head = nh;
-    if(!oriSeen){ oriSeen=true; headS=head; }   // no sweep in from 0 on the first reading
+    if(!oriSeen){ oriSeen=true; headS=head; }
     haveOri=true;
   }
-  if(e.beta!=null && !isNaN(e.beta)){
-    pitch=Math.max(-80,Math.min(80,e.beta-90));
-    haveOri=true;
-  }
+  if(bt!=null){ pitch=Math.max(-80,Math.min(80,bt-90)); haveOri=true; }
 }
 var oriHooked=false;
 function hookOri(){
