@@ -197,7 +197,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v16';
+const BUILD = 'v17';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -385,8 +385,9 @@ function onOri(e){
   var al = (e.alpha!=null && !isNaN(e.alpha)) ? (360-e.alpha) : null;
   var bt = (e.beta!=null && !isNaN(e.beta)) ? e.beta : null;
   if(c==null && al==null && bt==null) return;     // empty event, ignore it
-  oriCount++;
   if(!evtSrc) evtSrc = e.type;
+  if(e.type !== evtSrc) return;          // <-- the only guard. Without it: 150 deg of flicker.
+  oriCount++;
   if(!headSrc) headSrc = (c!=null) ? 'compass' : 'alpha';
   bestQ = (c!=null) ? 3 : 2;
   var a2 = (c!=null) ? c : al;
