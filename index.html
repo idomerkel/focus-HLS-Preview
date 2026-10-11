@@ -134,7 +134,16 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
       <li>התקרבו אליו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
       <li>התרחקו בלי לבצע — ותקבלו את ההתראה שהמערכת שולחת בשטח.</li>
     </ol>
-    <div class="warn" id="warn" style="display:none"></div>
+    <div class="warn" id="warn" style="display:none">
+      <b>לא התקבלה גישה לחיישני התנועה.</b><br>
+      באייפון: הגדרות ← אפליקציות ← Safari ← גלילה למטה ← <b>Motion &amp; Orientation Access</b> — להפעיל,
+      ואז לרענן את הדף ולנסות שוב.
+      <div style="display:flex;gap:8px;margin-top:11px">
+        <button class="pri" id="retry" style="padding:10px 12px;font-size:14px">נסו שוב</button>
+        <button class="sec" id="manual" style="padding:10px 12px;font-size:14px">המשיכו במצב ידני</button>
+      </div>
+      <div id="diag" style="margin-top:9px;font-size:11.5px;opacity:.75;direction:ltr;text-align:left"></div>
+    </div>
     <p style="font-size:13.5px">אין התקנה ואין הרשמה. הווידאו נשאר במכשיר ואינו נשלח לשום מקום.</p>
   </div>
   <div class="pfoot"><button class="pri" id="start">הפעילו מצלמה וחיישנים</button></div>
@@ -159,8 +168,10 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
       <p>נגיע לאחד הבניינים שלכם ונמפה את זה באמת: נקודות בקרה, נקודות סיור ומשימות לכל בעל תפקיד.</p>
       <input id="nm" placeholder="שם">
       <input id="co" placeholder="חברה">
+      <input id="bd" placeholder="כמה בניינים אתם מנהלים?" inputmode="numeric">
       <input id="ph" placeholder="טלפון" inputmode="tel">
-      <button class="pri" id="send" style="width:100%">קבעו לי סקר</button>
+      <button class="pri" id="send" style="width:100%">שלחו בוואטסאפ — ונחזור מחר</button>
+      <div id="fb" style="display:none;font-size:12.5px;color:var(--dim);margin-top:11px;line-height:1.6"></div>
     </div>
     <div class="note">FOCUS HLS בע״מ · ההדגמה מקומית בלבד.</div>
   </div>
@@ -178,6 +189,13 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 <div class="sheet" id="sheet"><div class="card" id="sheetCard"></div></div>
 
 <script>
+/* ============ לעריכה לפני האירוע ============ */
+const CFG = {
+  wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
+  mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
+  ev:   'CBRE 18.11'               // שם האירוע — מזהה מאיפה הגיע הליד
+};
+/* ======================================== */
 const ITEMS=[
  {id:'wc', ic:'🚻', nm:'שירותים', tasks:[
    {t:'ניקיון יסודי',f:'פעמיים ביום',d:'now',p:'כולל חידוש מתכלים ובדיקת ניקוזים.'},
@@ -203,7 +221,8 @@ const ITEMS=[
 const DUE={now:'דורש טיפול',soon:'מתקרב',ok:'בתוקף'};
 const $=id=>document.getElementById(id);
 
-let sel=null, marks=[], ux=0, uy=0, head=0, pitch=0, steps=0, haveOri=false;
+let sel=null, marks=[], ux=0, uy=0, head=0, pitch=0, steps=0, haveOri=false, manual=false, running=false;
+let permOri='—', permMot='—', oriCount=0, motCount=0, hasCompass=false;
 const HFOV=62, VFOV=100, NEAR=1.6, FAR=3.0, STEPLEN=0.65, PLACE_D=2.6;
 
 ITEMS.forEach(it=>{
@@ -217,51 +236,110 @@ ITEMS.forEach(it=>{
   $('chips').appendChild(c);
 });
 
-$('start').onclick=async function(){
+function askSensors(){
+  var O=(typeof DeviceOrientationEvent!=='undefined')?DeviceOrientationEvent:null;
+  var M=(typeof DeviceMotionEvent!=='undefined')?DeviceMotionEvent:null;
+  var needO = !!(O && O.requestPermission);
+  var needM = !!(M && M.requestPermission);
+
+  function motionStep(){
+    if(!needM){ permMot='n/a'; hookMotion(); return; }
+    try{
+      M.requestPermission().then(function(r){
+        permMot=r; if(r==='granted') hookMotion();
+      }).catch(function(err){ permMot='err'; });
+    }catch(e){ permMot='throw'; }
+  }
+
+  if(!needO){
+    permOri='n/a'; hookOri(); motionStep(); return;
+  }
+  // iOS rejects a second prompt while the first dialog is open -> chain them.
   try{
-    const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-    $('cam').srcObject=st; await $('cam').play();
-  }catch(e){}
-  try{
-    if(typeof DeviceOrientationEvent!=='undefined' && DeviceOrientationEvent.requestPermission){
-      const r=await DeviceOrientationEvent.requestPermission();
+    O.requestPermission().then(function(r){
+      permOri=r;
       if(r==='granted') hookOri();
-    } else hookOri();
-  }catch(e){}
-  try{
-    if(typeof DeviceMotionEvent!=='undefined' && DeviceMotionEvent.requestPermission){
-      const r=await DeviceMotionEvent.requestPermission();
-      if(r==='granted') hookMotion();
-    } else hookMotion();
-  }catch(e){}
+      motionStep();
+    }).catch(function(err){ permOri='err'; motionStep(); });
+  }catch(e){ permOri='throw'; motionStep(); }
+}
 
+$('start').onclick=function(){
+  askSensors();      // first, inside the gesture
+  startCamera();
+  openStage();
+};
+
+$('retry').onclick=function(){
+  oriHooked=false; motHooked=false;
+  askSensors();
   setTimeout(function(){
-    if(!haveOri){
-      $('warn').style.display='block';
-      $('warn').textContent='לא התקבלה גישה לחיישני התנועה. ההדגמה תרוץ, אבל הסימונים לא יינעלו במרחב. '
-        +'פתחו בטלפון ואשרו את הבקשה.';
-      $('p1').classList.add('on');
-    }
-  },1500);
+    if(haveOri){ $('warn').style.display='none'; $('p1').classList.remove('on'); }
+    else diag();
+  },1800);
+};
 
+$('manual').onclick=function(){
+  manual=true;
+  $('warn').style.display='none';
+  $('p1').classList.remove('on');
+  $('ctlLbl').textContent='מצב ידני — הקישו על המסך כדי להניח סימון';
+};
+
+function startCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
+    .then(function(st){ $('cam').srcObject=st; return $('cam').play(); })
+    .catch(function(){});
+}
+
+function openStage(){
   $('p1').classList.remove('on');
   $('ctl').style.display='block';
   $('cross').classList.add('on');
-  requestAnimationFrame(loop);
-};
-
-function hookOri(){
-  window.addEventListener('deviceorientation',function(e){
-    var a=(e.webkitCompassHeading!=null)?e.webkitCompassHeading:(e.alpha!=null?360-e.alpha:null);
-    if(a==null) return;
-    haveOri=true; head=a;
-    if(e.beta!=null) pitch=Math.max(-80,Math.min(80,e.beta-90));
-  },true);
+  if(!running){ running=true; requestAnimationFrame(loop); }
+  setTimeout(function(){
+    if(!haveOri && !manual){
+      diag();
+      $('warn').style.display='block';
+      $('p1').classList.add('on');
+    }
+  },4200);
 }
 
-var lp=9.81, lastStep=0;
+function diag(){
+  var d=$('diag'); if(!d) return;
+  d.textContent='אבחון: כיוון='+permOri+' · תנועה='+permMot+
+    ' · אירועי כיוון='+oriCount+' · אירועי תנועה='+motCount+
+    ' · מצפן='+(hasCompass?'כן':'לא');
+}
+
+function onOri(e){
+  oriCount++;
+  var h=null;
+  if(e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)){
+    h=e.webkitCompassHeading; hasCompass=true;
+  } else if(e.alpha!=null && !isNaN(e.alpha)){
+    h=(e.absolute===false)? (360-e.alpha) : (360-e.alpha);
+  }
+  if(h!=null){ head=((h%360)+360)%360; haveOri=true; }
+  if(e.beta!=null && !isNaN(e.beta)){
+    pitch=Math.max(-80,Math.min(80,e.beta-90));
+    haveOri=true;   // gyro alive even if the compass has not settled
+  }
+}
+var oriHooked=false;
+function hookOri(){
+  if(oriHooked) return; oriHooked=true;
+  window.addEventListener('deviceorientation',onOri,true);
+  window.addEventListener('deviceorientationabsolute',onOri,true);
+}
+
+var lp=9.81, lastStep=0, motHooked=false;
 function hookMotion(){
+  if(motHooked) return; motHooked=true;
   window.addEventListener('devicemotion',function(e){
+    motCount++;
     var a=e.accelerationIncludingGravity; if(!a) return;
     var m=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
     lp=lp*0.88+m*0.12;
@@ -274,7 +352,22 @@ function hookMotion(){
   },true);
 }
 
-$('place').onclick=function(){
+document.addEventListener('click',function(e){
+  if(!manual || !sel) return;
+  if(e.target.closest('.bottom')||e.target.closest('.panel')||e.target.closest('.sheet')||e.target.closest('.alert')) return;
+  placeAt(e.clientX,e.clientY);
+},true);
+
+function placeAt(px,py){
+  var W=window.innerWidth,H=window.innerHeight;
+  head = ((px-W/2)/W)*HFOV;
+  pitch = -((py-H/2)/H)*VFOV;
+  doPlace();
+}
+
+$('place').onclick=function(){ doPlace(); };
+
+function doPlace(){
   if(!sel) return;
   var it=ITEMS.find(function(i){return i.id===sel;});
   var r=head*Math.PI/180;
@@ -290,7 +383,7 @@ $('place').onclick=function(){
   $('done').disabled=false;
   $('ctlLbl').textContent='הסתובבו והתרחקו — הסימון יישאר במקום';
   if(marks.length===1) setTimeout(function(){openSheet(m);},450);
-};
+}
 
 function norm(d){ while(d>180)d-=360; while(d<-180)d+=360; return d; }
 
@@ -350,7 +443,7 @@ function openSheet(m){
 }
 $('sheet').onclick=function(e){ if(e.target.id==='sheet') $('sheet').classList.remove('on'); };
 
-var alertFor=null;
+var alertFor=null, lastSum='';
 function fireAlert(m,t){
   alertFor={m:m,t:t};
   $('alertTxt').innerHTML='<b>'+m.it.nm+' — '+t.t+'</b><br>'+
@@ -379,12 +472,34 @@ $('done').onclick=function(){
     '<div class="r"><span>מהן שנתיות ומעלה</span><b>'+rare+'</b></div>'+
     '<div class="r"><span>צעדים שהמערכת ספרה</span><b>'+steps+'</b></div>'+
     '<div class="r"><span>כמה מהן צריך לזכור</span><b>0</b></div>';
+    lastSum = marks.length+' ציודים, '+tasks+' משימות, '+steps+' צעדים';
   $('ctl').style.display='none'; $('cross').classList.remove('on');
   $('p3').classList.add('on');
 };
 $('send').onclick=function(){
-  if(!$('nm').value.trim()||!$('ph').value.trim()){ alert('שם וטלפון, ונחזור אליכם מחר.'); return; }
-  $('send').textContent='נרשם — נחזור אליכם מחר'; $('send').disabled=true;
+  var nm=$('nm').value.trim(), co=$('co').value.trim(),
+      bd=$('bd').value.trim(), ph=$('ph').value.trim();
+  if(!nm||!ph){ alert('שם וטלפון, ונחזור אליכם מחר.'); return; }
+
+  var msg = 'סקר אתר — מההדגמה באירוע ' + CFG.ev + '\n'
+          + 'שם: ' + nm + '\n'
+          + 'חברה: ' + (co||'—') + '\n'
+          + 'בניינים: ' + (bd||'—') + '\n'
+          + 'טלפון: ' + ph
+          + (lastSum ? '\nבהדגמה: ' + lastSum : '');
+
+  var wa = 'https://wa.me/' + CFG.wa + '?text=' + encodeURIComponent(msg);
+  var mt = 'mailto:' + CFG.mail + '?subject=' + encodeURIComponent('סקר אתר — ' + CFG.ev)
+         + '&body=' + encodeURIComponent(msg);
+
+  $('fb').style.display='block';
+  $('fb').innerHTML = 'לא נפתח וואטסאפ? '
+    + '<a href="' + mt + '" style="color:var(--cyan)">שלחו במייל</a>'
+    + ' · או התקשרו '
+    + '<a href="tel:+' + CFG.wa + '" style="color:var(--cyan)" dir="ltr">+' + CFG.wa + '</a>';
+
+  $('send').textContent='נפתח וואטסאפ — רק להקיש שלח';
+  window.location.href = wa;
 };
 </script>
 </body>
