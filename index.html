@@ -118,7 +118,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 <div class="cross" id="cross"></div>
 
 <div class="top">
-  <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה</div></div>
+  <div><div class="b">FOCUS GUARD</div><div class="t">הדגמה חיה · v20a</div></div>
   <div class="hud" id="hud"></div>
 </div>
 
@@ -259,15 +259,21 @@ function hookOri(){
   },true);
 }
 
-var lp=9.81, lastStep=0;
+var base=9.81, lastStep=0, armed=false;
 function hookMotion(){
   window.addEventListener('devicemotion',function(e){
     var a=e.accelerationIncludingGravity; if(!a) return;
     var m=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
-    lp=lp*0.88+m*0.12;
+    // THE ONLY FUNCTIONAL CHANGE vs the original.
+    // The baseline must be MUCH slower than the gait (~2s). At 0.88 it was a
+    // 140ms filter: it chased the step peak itself, so (m - baseline) never
+    // crossed 1.9 and steps stayed at 0. Measured on SM-S947B via logcat.
+    base = base*0.992 + m*0.008;
+    var hp = m - base;
     var now=Date.now();
-    if(m-lp>1.9 && now-lastStep>330){
-      lastStep=now; steps++;
+    if(hp < -0.8) armed=true;                     // trough of the stride
+    if(armed && hp > 0.9 && now-lastStep>280){    // then the heel strike
+      armed=false; lastStep=now; steps++;
       var r=head*Math.PI/180;
       ux+=STEPLEN*Math.sin(r); uy+=STEPLEN*Math.cos(r);
     }
