@@ -197,7 +197,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v15';
+const BUILD = 'v16';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -244,8 +244,8 @@ let peaks=[], walking=false;
 const K_MIN=0.14, K_MAX=0.70, K_SPAN=8;   // degrees of change that counts as a real turn
 const SM_POS=0.22, MAXRATE=600;            // deg/sec, a spike guard only
 const Q = new URLSearchParams(location.search);
-let HFOV = parseFloat(Q.get('hfov')) || 67;        // ?hfov=72 to tune live
-let VFOV = 100;                                     // derived once the video is up
+let HFOV = parseFloat(Q.get('hfov')) || 62;       // the original value, ?hfov= to tune
+let VFOV = parseFloat(Q.get('vfov')) || 100;      // the original value
 const NEAR=1.6, FAR=3.0, PLACE_D=2.6;
 let STEPLEN = parseFloat(Q.get('steplen')) || 0.65; // ?steplen=0.72
 let roll = 0, camInfo = '-';
@@ -350,7 +350,7 @@ function startCamera(){
       frameRate:{ideal:30}
     },audio:false})
     .then(function(st){ $('cam').srcObject=st; return $('cam').play(); })
-    .then(function(){ setTimeout(measureFov, 400); setTimeout(measureFov, 1500); })
+    // no auto-measure: the original fixed values tracked better in practice
     .catch(function(e){ camInfo = 'ERR:'+(e && e.name || 'unknown'); });
 }
 
@@ -361,8 +361,7 @@ function openStage(){
   if(!running){ running=true; requestAnimationFrame(loop); }
   setTimeout(function(){
     if(mode==='guided') return;
-    if(!haveOri){ diag(); goGuided(); return; }        // no sensors at all
-    if(bestQ<2 && jitter>1.2){ diag(); goGuided(); }   // heading present but drifting
+    if(!haveOri){ diag(); $('warn').style.display='block'; $('p1').classList.add('on'); }
   },4200);
 }
 
@@ -383,38 +382,22 @@ function oriQuality(e){
 
 function onOri(e){
   var c = (e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) ? e.webkitCompassHeading : null;
-  var al = (e.alpha!=null && !isNaN(e.alpha)) ? ((360-e.alpha)%360+360)%360 : null;
+  var al = (e.alpha!=null && !isNaN(e.alpha)) ? (360-e.alpha) : null;
   var bt = (e.beta!=null && !isNaN(e.beta)) ? e.beta : null;
-
-  // An empty event must never claim the lock: browsers fire one before the
-  // sensor has anything to say.
-  if(c==null && al==null && bt==null) return;
-
-  var q = oriQuality(e);
-  if(q > bestQ){
-    // Upgrade to the better source. Android fires both a relative and an
-    // absolute stream; the relative one drifts, so absolute always wins.
-    bestQ = q; evtSrc = e.type;
-    headSrc = (c!=null) ? 'compass' : 'alpha';
-    hasCompass = (c!=null);
-    oriSeen = false;              // snap to the new frame, do not sweep into it
-  } else if(q < bestQ || e.type !== evtSrc){
-    return;                        // a worse or competing stream
-  }
+  if(c==null && al==null && bt==null) return;     // empty event, ignore it
   oriCount++;
-
-  var h = (headSrc==='compass') ? c : al;
-  if(h!=null){
-    var nh=((h%360)+360)%360;
+  if(!evtSrc) evtSrc = e.type;
+  if(!headSrc) headSrc = (c!=null) ? 'compass' : 'alpha';
+  bestQ = (c!=null) ? 3 : 2;
+  var a2 = (c!=null) ? c : al;
+  if(a2!=null){
+    var nh=((a2%360)+360)%360;
     var dd=nh-headRawLast; while(dd>180)dd-=360; while(dd<-180)dd+=360;
-    jitter = jitter*0.9 + Math.abs(dd)*0.1;
-    headRawLast = nh;
-    head = nh;
-    if(!oriSeen){ oriSeen=true; headS=head; }
-    haveOri=true;
+    jitter = jitter*0.9 + Math.abs(dd)*0.1; headRawLast = nh;
+    head = nh; headS = nh;                        // no smoothing, as in the original
+    haveOri = true;
   }
-  if(bt!=null){ pitch=Math.max(-80,Math.min(80,bt-90)); haveOri=true; }
-  if(e.gamma!=null && !isNaN(e.gamma)) roll = Math.max(-45,Math.min(45,e.gamma));
+  if(bt!=null){ pitch=Math.max(-80,Math.min(80,bt-90)); pitchS=pitch; haveOri=true; }
 }
 var oriHooked=false;
 function hookOri(){
@@ -431,32 +414,20 @@ function hookMotion(){
     motCount++;
     var a=e.accelerationIncludingGravity; if(!a) return;
     var m=Math.sqrt((a.x||0)*(a.x||0)+(a.y||0)*(a.y||0)+(a.z||0)*(a.z||0));
-    // The baseline must be MUCH slower than the gait, or it chases the step
-    // peak and the difference never grows. ~2 s time constant = gravity only.
-    grav = grav*0.992 + m*0.008;
-    var hp = m - grav;
-    lp = grav;
+    lp = lp*0.88 + m*0.12;                        // the original baseline
+    var hp = m - lp;
+    grav = lp;
     if(hp>hpMax) hpMax=hp; if(hp<hpMin) hpMin=hp;
     var now=Date.now();
-    if(!armed && hp < -0.55) armed = true;         // trough of the stride
-    if(armed && hp > 1.0 && now-lastStep>280){     // then its peak
-      armed=false;
+    if(hp > 1.9 && now-lastStep>330){              // the original threshold
       lastStep=now;
-      gPeak = now;
+      lastStep=now; gPeak=now; steps++; walking=true;
       if(mode==='guided'){ gDist += (gStage===1 ? 0.55 : (gStage===3 ? -0.55 : 0)); }
-      var wasWalking = walking;
-      peaks.push(now); if(peaks.length>4) peaks.shift();
-      // one jolt is hand shake; two peaks in a walking cadence is walking
-      walking = peaks.length>=2 && (now-peaks[peaks.length-2])<1500;
-      if(walking){
-        // credit the peak that started the cadence, so the first step is not lost
-        var add = (wasWalking ? 1 : 2);
-        var r=headS*Math.PI/180;
-        steps += add;
-        ux+=STEPLEN*add*Math.sin(r); uy+=STEPLEN*add*Math.cos(r);
-      }
+      var r=head*Math.PI/180;
+      ux+=STEPLEN*Math.sin(r); uy+=STEPLEN*Math.cos(r);
+      uxS=ux; uyS=uy;                              // no position smoothing
     }
-    if(now-lastStep>2200){ peaks.length=0; walking=false; }
+    if(Date.now()-lastStep>1500) walking=false;
   },true);
 }
 
@@ -546,30 +517,18 @@ function guidedStep(){
 function loop(){
   var W=window.innerWidth,H=window.innerHeight;
   if(mode==='guided'){ guidedStep(); requestAnimationFrame(loop); return; }
-  var d = head-headS; while(d>180)d-=360; while(d<-180)d+=360;
-  var k = K_MIN + (K_MAX-K_MIN)*Math.min(1, Math.abs(d)/K_SPAN);
-  var step = d*k, cap = MAXRATE/60;
-  if(step> cap) step= cap; if(step< -cap) step=-cap;
-  headS = ((headS+step)%360+360)%360;
-  var dp = pitch-pitchS;
-  pitchS += dp * (K_MIN + (K_MAX-K_MIN)*Math.min(1, Math.abs(dp)/K_SPAN));
-  uxS   += (ux - uxS) * SM_POS;
-  uyS   += (uy - uyS) * SM_POS;
+  headS = head; pitchS = pitch; uxS = ux; uyS = uy;   // raw, as in the original
   marks.forEach(function(m){
     var dx=m.x-uxS, dy=m.y-uyS;
     var dist=Math.sqrt(dx*dx+dy*dy);
     var brg=Math.atan2(dx,dy)*180/Math.PI;
     var dAz=norm(brg-headS);
     var el=m.el_;
-    if(Math.abs(dAz)>110){ el.style.display='none'; }   // behind the user
+    if(Math.abs(dAz)>HFOV*0.85){ el.style.display='none'; }
     else{
-      var ox = (dAz/HFOV)*W;
-      var oy = -((m.el0-pitchS)/VFOV)*H;
-      var rr = roll*Math.PI/180;                 // keep the marker level with the world
-      var px = W/2 + ox*Math.cos(rr) - oy*Math.sin(rr);
-      var py = H/2 + ox*Math.sin(rr) + oy*Math.cos(rr);
-      if(px < -90 || px > W+90){ el.style.display='none'; return; }
       el.style.display='flex';
+      var px = W/2 + (dAz/HFOV)*W;
+      var py = H/2 - ((m.el0-pitchS)/VFOV)*H;
       var sc=Math.max(.52,Math.min(1.7,2.4/Math.max(dist,.6)));
       el.style.left='0px'; el.style.top='0px';
       el.style.transform='translate('+(px).toFixed(1)+'px,'+(py).toFixed(1)+'px) translate(-50%,-50%) scale('+sc.toFixed(2)+')';
