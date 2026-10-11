@@ -197,7 +197,7 @@ h1{font-size:26px;line-height:1.15;font-weight:700;margin:7px 0 12px}
 
 <script>
 /* ============ לעריכה לפני האירוע ============ */
-const BUILD = 'v14';
+const BUILD = 'v15';
 const CFG = {
   wa:   '972546694750',            // מספר הוואטסאפ שאליו יגיעו הלידים (בלי + ובלי 0)
   mail: 'idomerkel@gmail.com',     // גיבוי למי שאין לו וואטסאפ
@@ -344,9 +344,13 @@ function measureFov(){
 
 function startCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
+  navigator.mediaDevices.getUserMedia({video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920}, height:{ideal:1080},
+      frameRate:{ideal:30}
+    },audio:false})
     .then(function(st){ $('cam').srcObject=st; return $('cam').play(); })
-    .then(function(){ setTimeout(measureFov, 400); })
+    .then(function(){ setTimeout(measureFov, 400); setTimeout(measureFov, 1500); })
     .catch(function(e){ camInfo = 'ERR:'+(e && e.name || 'unknown'); });
 }
 
