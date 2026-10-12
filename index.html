@@ -2,119 +2,260 @@
 <html lang="he" dir="rtl"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>FOCUS GUARD — מנוע מעקב</title>
+<title>FOCUS GUARD — הדגמה</title>
 <style>
-:root{--navy:#0A1628;--panel:#17222D;--panel2:#1C2937;--edge:#2B3B4C;
-  --ink:#E8EEF4;--dim:#8DA0B3;--faint:#5E7085;--or:#EB872D;--bl:#275A82;
-  --ok:#3FB984;--no:#E5484D;--amber:#E0A02E;
-  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+:root{
+  --navy:#0A1628; --panel:#17222D; --panel2:#1C2937; --edge:#2B3B4C;
+  --ink:#E8EEF4; --dim:#8DA0B3; --faint:#5E7085;
+  --or:#EB872D; --bl:#275A82;
+  --ok:#3FB984; --amber:#E0A02E; --red:#E5484D;
+  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
 body{background:var(--navy);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Hebrew",Arial,sans-serif;
   font-size:16px;line-height:1.45}
 
-/* ---------- intro / unsupported ---------- */
-#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
-  padding:calc(var(--st) + 26px) 22px calc(14px + var(--sb));overflow-y:auto}
+button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:13px 16px;font-weight:600;font-size:15px}
+.pri{background:var(--or);color:#1A0F04;flex:1}
+.sec{background:rgba(28,41,55,.94);color:var(--dim);border:1px solid var(--edge)}
+button:disabled{opacity:.38}
 .kick{font-size:11px;letter-spacing:2.6px;color:var(--or);font-weight:700}
 h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
-#intro p{font-size:15px;color:var(--dim);margin:0 0 14px}
-.card{background:var(--panel);border:1px solid var(--edge);border-radius:11px;padding:14px;margin-bottom:12px}
-.card .t{font-size:13px;font-weight:700;margin-bottom:5px}
+
+/* ---------- full-page screens (outside the AR session) ---------- */
+.screen{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;padding-top:var(--st)}
+.screen.on{display:flex}
+.sin{flex:1;overflow-y:auto;padding:26px 22px}
+.sin p{font-size:15px;color:var(--dim);margin:0 0 14px}
+.sin ol{margin:0 18px 18px 0;padding:0;font-size:15px}
+.sin ol li{margin-bottom:9px}
+.sfoot{flex:0 0 auto;padding:12px 14px calc(12px + var(--sb));display:flex;gap:9px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:11px;padding:14px;margin-bottom:11px}
+.card .t{font-size:13.5px;font-weight:700;margin-bottom:4px}
 .card .d{font-size:13px;color:var(--dim)}
-.card.bad{border-color:var(--no)}.card.good{border-color:var(--ok)}
-button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:14px 16px;font-weight:600;font-size:15.5px}
-.pri{background:var(--or);color:#1A0F04;width:100%}
-.sec{background:var(--panel2);color:var(--dim);border:1px solid var(--edge)}
-button:disabled{opacity:.4}
-.spacer{flex:1 0 10px}
+.card.bad{border-color:var(--red)} .card.good{border-color:var(--ok)}
 
 /* ---------- AR overlay ---------- */
 #ui{position:fixed;inset:0;z-index:10;display:none}
 #ui.on{display:block}
 .hudbar{position:absolute;top:0;left:0;right:0;padding:calc(var(--st) + 10px) 14px 10px;
-  background:linear-gradient(to bottom,rgba(6,14,22,.86),rgba(6,14,22,0));
-  display:flex;align-items:flex-start;gap:10px;pointer-events:none}
+  background:linear-gradient(to bottom,rgba(6,14,22,.86),rgba(6,14,22,0));display:flex;gap:10px}
 .hudbar .b{font-size:14px;font-weight:700}
 .hudbar .s{font-size:9.5px;letter-spacing:1.5px;color:var(--faint)}
 .tele{margin-inline-start:auto;text-align:left;font-size:11px;color:var(--dim);
-  line-height:1.5;font-variant-numeric:tabular-nums;direction:ltr}
-.tele b{color:var(--or)}
-.tele .w{color:var(--amber)}
+  line-height:1.5;font-variant-numeric:tabular-nums}
+.tele b{color:var(--or)} .tele .w{color:var(--amber)}
 
-#ret{position:absolute;width:62px;height:62px;margin:-31px 0 0 -31px;left:0;top:0;
+#ret{position:absolute;left:0;top:0;width:62px;height:62px;margin:-31px 0 0 -31px;
   pointer-events:none;display:none;will-change:transform}
 #ret.on{display:block}
 #ret i{position:absolute;inset:0;border:2px solid rgba(235,135,45,.95);border-radius:50%}
-#ret i:nth-child(2){inset:22px;border-width:1.5px;border-color:rgba(255,255,255,.8)}
+#ret i:nth-child(2){inset:22px;border-width:1.5px;border-color:rgba(255,255,255,.85)}
 
 .mk{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;
   pointer-events:none;will-change:transform}
 .mk .dot{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:21px;border:2.5px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.6);background:var(--or)}
+  font-size:21px;border:2.5px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.6);position:relative}
+.mk .dot b{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;
+  background:var(--red);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid #fff}
 .mk .tag{margin-top:5px;background:rgba(6,14,22,.88);border:1px solid var(--edge);border-radius:12px;
   padding:3px 9px;font-size:11.5px;white-space:nowrap}
 .mk .tag em{font-style:normal;color:var(--or);font-variant-numeric:tabular-nums}
-.mk.behind{opacity:0}
+.mk.off{opacity:0}
+.mk.near .dot{animation:ring 1.4s infinite}
+@keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(235,135,45,.55)}70%{box-shadow:0 0 0 16px rgba(235,135,45,0)}}
+.mk.due .dot{animation:ringr 1.4s infinite}
+@keyframes ringr{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,.6)}70%{box-shadow:0 0 0 16px rgba(229,72,77,0)}}
 
-.foot{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(12px + var(--sb));
-  background:linear-gradient(to top,rgba(6,14,22,.94) 60%,rgba(6,14,22,0))}
-.tip{font-size:13px;color:var(--dim);margin-bottom:10px;text-align:center}
-.acts{display:flex;gap:9px}
-.acts .pri{flex:1}
+.foot{position:absolute;left:0;right:0;bottom:0;padding:14px 0 calc(10px + var(--sb));
+  background:linear-gradient(to top,rgba(6,14,22,.95) 58%,rgba(6,14,22,0))}
+.tip{padding:0 14px 8px;font-size:12.5px;color:var(--dim)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;background:rgba(28,41,55,.94);border:1px solid var(--edge);border-radius:20px;
+  padding:8px 13px;font-size:14px;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.chip.sel{border-color:var(--or);color:var(--or);background:rgba(235,135,45,.14)}
+.chip.used{opacity:.4}
+.chip span{font-size:17px}
+.acts{display:flex;gap:9px;padding:0 14px}
+
+/* ---------- task sheet ---------- */
+.sheet{position:absolute;inset:0;background:rgba(5,12,20,.76);display:none;align-items:flex-end;z-index:30}
+.sheet.on{display:flex}
+.scard{background:var(--panel);width:100%;border-radius:16px 16px 0 0;
+  padding:20px 20px calc(20px + var(--sb));border-top:1px solid var(--edge);max-height:82vh;overflow-y:auto}
+.scard .ic{font-size:29px}
+.scard h3{font-size:20px;font-weight:700;margin:6px 0 2px}
+.scard .loc{font-size:13px;color:var(--faint);margin-bottom:14px}
+.task{border:1px solid var(--edge);border-radius:10px;padding:12px 13px;margin-bottom:9px;background:var(--panel2)}
+.task .r{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.task .nm{font-weight:600;font-size:15px}
+.task .freq{font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid var(--edge);color:var(--dim)}
+.task .due{margin-inline-start:auto;font-size:12px;font-weight:700}
+.d-now{color:var(--red)} .d-soon{color:var(--amber)} .d-ok{color:var(--ok)}
+.task p{font-size:13px;color:var(--dim);margin:0}
+
+/* ---------- alert ---------- */
+.alert{position:absolute;left:12px;right:12px;top:calc(var(--st) + 58px);z-index:40;
+  background:#1A1116;border:1px solid var(--red);border-radius:12px;padding:14px 15px;display:none;
+  box-shadow:0 12px 34px rgba(0,0,0,.65)}
+.alert.on{display:block;animation:drop .28s ease-out}
+@keyframes drop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+.alert .h{display:flex;gap:9px;font-weight:700;color:var(--red);font-size:15px;margin-bottom:5px}
+.alert p{font-size:13.5px;margin:0 0 10px}
+.alert .row{display:flex;gap:8px}
+.alert button{padding:9px 13px;font-size:13.5px;flex:1}
+
+/* ---------- summary ---------- */
+.sum{background:var(--panel2);border:1px solid var(--edge);border-radius:12px;padding:15px;margin-bottom:18px}
+.sum .r{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--edge);font-size:14px}
+.sum .r:last-child{border-bottom:none}
+.sum .r b{color:var(--or);font-variant-numeric:tabular-nums}
+.cta{background:var(--panel2);border:1px solid var(--or);border-radius:12px;padding:17px}
+.cta h3{font-size:18px;font-weight:700;margin:0 0 6px;color:var(--or)}
+.cta p{font-size:13.5px;color:var(--dim);margin-bottom:13px}
+.cta input{width:100%;background:var(--navy);border:1px solid var(--edge);border-radius:8px;
+  padding:12px;color:var(--ink);font:inherit;font-size:15px;margin-bottom:9px}
+.note{font-size:11.5px;color:var(--faint);margin-top:14px;line-height:1.5;padding-bottom:16px}
 </style></head><body>
 
-<div id="intro">
-  <div class="kick">מנוע מעקב · בדיקה</div>
-  <h1>סימון שננעל על נקודה אמיתית בחדר</h1>
-  <p>הגרסה הזאת לא סופרת צעדים ולא משתמשת במצפן. היא מקבלת את מיקום
-     המכשיר מהמעקב החזותי של הטלפון — אותו מנוע שמשמש אפליקציות AR.
-     ניענוע הטלפון במקום לא יזיז כלום.</p>
-  <div id="chk"></div>
-  <div class="spacer"></div>
-  <button class="pri" id="go" disabled>בודק תמיכה…</button>
+<!-- ============ 1. intro ============ -->
+<div class="screen on" id="s1">
+  <div class="sin">
+    <div class="kick">60 שניות</div>
+    <h1>הסימון נשאר על הציוד — גם כשאתם זזים</h1>
+    <p>ההדגמה מקבלת את מיקום המכשיר מהמעקב החזותי של הטלפון — אותו עיקרון
+       שעליו עובדת המערכת באתר. ניענוע הטלפון במקום לא יזיז כלום.</p>
+    <ol>
+      <li>הזיזו את הטלפון לאט עד שיופיע עיגול כתום על ציוד או קיר.</li>
+      <li>בחרו ציוד מהרשימה והקישו ״הנח כאן״.</li>
+      <li>הסתובבו והתרחקו — הסימון יישאר בדיוק שם.</li>
+      <li>התקרבו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
+      <li>התרחקו בלי לבצע — ותקבלו את ההתראה שהמערכת שולחת בשטח.</li>
+    </ol>
+    <div id="chk"></div>
+    <p style="font-size:13.5px">אין התקנה ואין הרשמה. הווידאו נשאר במכשיר ואינו נשלח לשום מקום.</p>
+  </div>
+  <div class="sfoot"><button class="pri" id="go" disabled>בודק תמיכה…</button></div>
 </div>
 
+<!-- ============ 2. AR overlay ============ -->
 <div id="ui">
-  <div class="hudbar">
-    <div><div class="b">FOCUS GUARD</div><div class="s">מעקב חזותי · ar1</div></div>
+  <div class="hudbar" id="hudbar">
+    <div><div class="b">FOCUS GUARD</div><div class="s">הדגמה חיה · ar2</div></div>
     <div class="tele" id="tele"></div>
   </div>
+
   <div id="ret"><i></i><i></i></div>
-  <div class="foot">
-    <div class="tip" id="tip">הזז את הטלפון לאט עד שיופיע העיגול הכתום</div>
+
+  <div class="alert" id="alert">
+    <div class="h"><span>⚠</span><span>התרחקת — משימה לא בוצעה</span></div>
+    <p id="alertTxt"></p>
+    <div class="row">
+      <button class="pri" id="aFix">חוזר להשלים</button>
+      <button class="sec" id="aClose">לא עכשיו</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet"><div class="scard" id="scard"></div></div>
+
+  <div class="foot" id="foot">
+    <div class="tip" id="tip">הזיזו את הטלפון לאט עד שיופיע העיגול הכתום</div>
+    <div class="chips" id="chips"></div>
     <div class="acts">
       <button class="pri" id="place" disabled>הנח כאן</button>
-      <button class="sec" id="stop">יציאה</button>
+      <button class="sec" id="done" disabled>סיום</button>
     </div>
   </div>
 </div>
 
+<!-- ============ 3. summary ============ -->
+<div class="screen" id="s3">
+  <div class="sin">
+    <div class="kick">זה מה שהמערכת תעשה</div>
+    <h1>מעכשיו אף אחד לא צריך לזכור את זה</h1>
+    <div class="sum" id="sum"></div>
+    <div class="cta">
+      <h3>סקר אתר — ללא עלות</h3>
+      <p>נגיע לאחד הבניינים שלכם ונמפה את זה באמת: נקודות בקרה, נקודות סיור ומשימות לכל בעל תפקיד.</p>
+      <input id="nm" placeholder="שם">
+      <input id="co" placeholder="חברה">
+      <input id="bld" placeholder="כמה בניינים בניהולכם" inputmode="numeric">
+      <input id="ph" placeholder="טלפון" inputmode="tel">
+      <button class="pri" id="send" style="width:100%">קבעו לי סקר</button>
+      <div id="sendNote" style="font-size:12px;color:var(--dim);margin-top:9px;display:none"></div>
+    </div>
+    <div class="note">FOCUS HLS בע״מ · ההדגמה מקומית בלבד. הווידאו לא נשמר ולא נשלח.</div>
+  </div>
+  <div class="sfoot"><button class="sec" id="again" style="flex:1">להדגמה נוספת</button></div>
+</div>
+
 <script>
 'use strict';
+var CFG={ wa:'972546694750', mail:'idomerkel@gmail.com', ev:'CBRE 18.11' };
+var NEAR=1.6, FAR=3.0, FALLBACK_D=2.5;
+var WP_MIN=0.15, JUMP=0.5;   // waypoint spacing (m) and single-frame jump cutoff (m)
+
+var ITEMS=[
+ {id:'wc', ic:'🚻',nm:'שירותים',tasks:[
+   {t:'ניקיון יסודי',f:'פעמיים ביום',d:'now',p:'כולל חידוש מתכלים ובדיקת ניקוזים.'},
+   {t:'בדיקת דליפות',f:'שבועי',d:'soon',p:'מתחת לכיור ובחיבורי האסלה.'}]},
+ {id:'mir',ic:'🪞',nm:'מראה',tasks:[
+   {t:'ניקוי וליטוש',f:'שבועי',d:'soon',p:'ללא סימני מים בקצוות.'}]},
+ {id:'trf',ic:'⚡',nm:'שנאי מרכזי',tasks:[
+   {t:'החלפת שמן',f:'כל 3 שנים',d:'ok',p:'כולל דגימה ובדיקת בידוד לפני ההחלפה.'},
+   {t:'בדיקה תרמוגרפית',f:'שנתי',d:'soon',p:'צילום חום בחיבורים תחת עומס.'}]},
+ {id:'ext',ic:'🧯',nm:'מטף כיבוי',tasks:[
+   {t:'בדיקה חזותית',f:'חודשי',d:'now',p:'לחץ, פלומבה, גישה פנויה ושילוט.'},
+   {t:'בדיקה שנתית',f:'שנתי',d:'ok',p:'על ידי בודק מוסמך, עם תווית.'}]},
+ {id:'hvc',ic:'❄',nm:'מזגן',tasks:[
+   {t:'ניקוי מסננים',f:'חודשי',d:'soon',p:'שטיפה וייבוש לפני החזרה.'},
+   {t:'טיפול מקיף',f:'שנתי',d:'ok',p:'לפני תחילת הקיץ.'}]},
+ {id:'elv',ic:'🛗',nm:'מעלית',tasks:[
+   {t:'בדיקת בודק מוסמך',f:'חצי שנתי',d:'soon',p:'כולל תיעוד בפנקס המעלית.'}]},
+ {id:'pmp',ic:'🔧',nm:'משאבה',tasks:[
+   {t:'הפעלת ניסיון',f:'שבועי',d:'now',p:'5 דקות, בדיקת לחץ ורעש חריג.'}]},
+ {id:'lgt',ic:'💡',nm:'תאורת חירום',tasks:[
+   {t:'בדיקת גיבוי',f:'חודשי',d:'soon',p:'ניתוק זרם ווידוא הדלקה.'}]},
+];
+var DUE={now:'דורש טיפול',soon:'מתקרב',ok:'בתוקף'};
+var COL={now:'#E5484D',soon:'#E0A02E',ok:'#3FB984'};
 var $=function(id){return document.getElementById(id);};
 
-/* ---------------- matrix helpers (column-major, like WebXR) ---------------- */
-function mulMV(m,v){            // m:Float32Array(16) col-major, v:[x,y,z,w]
+/* ---------------- projection (column-major, WebXR convention) ---------------- */
+function mulMV(m,v){
   return [ m[0]*v[0]+m[4]*v[1]+m[8] *v[2]+m[12]*v[3],
            m[1]*v[0]+m[5]*v[1]+m[9] *v[2]+m[13]*v[3],
            m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
            m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3] ];
 }
-// world point -> CSS pixels. returns null when behind the camera.
-function project(world, viewM, projM, W, H){
-  var vp = mulMV(viewM, [world[0],world[1],world[2],1]);   // world -> view
-  if(vp[2] > -0.05) return null;                            // behind / on the lens
-  var cp = mulMV(projM, vp);                                // view -> clip
-  if(cp[3] <= 0) return null;
-  var ndcx = cp[0]/cp[3], ndcy = cp[1]/cp[3];
-  return { x:(ndcx*0.5+0.5)*W, y:(1-(ndcy*0.5+0.5))*H,
-           depth:-vp[2], off:Math.max(Math.abs(ndcx),Math.abs(ndcy)) };
+function project(world,viewM,projM,W,H){
+  var vp=mulMV(viewM,[world[0],world[1],world[2],1]);
+  if(vp[2]>-0.05) return null;
+  var cp=mulMV(projM,vp);
+  if(cp[3]<=0) return null;
+  var nx=cp[0]/cp[3], ny=cp[1]/cp[3];
+  return { x:(nx*0.5+0.5)*W, y:(1-(ny*0.5+0.5))*H, off:Math.max(Math.abs(nx),Math.abs(ny)) };
 }
 
+/* ---------------- chips ---------------- */
+var sel=null;
+ITEMS.forEach(function(it){
+  var c=document.createElement('div');
+  c.className='chip'; c.dataset.id=it.id;
+  c.innerHTML='<span>'+it.ic+'</span>'+it.nm;
+  c.onclick=function(){
+    if(c.classList.contains('used')) return;
+    document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel');});
+    c.classList.add('sel'); sel=it.id; refreshPlace();
+  };
+  $('chips').appendChild(c);
+});
+
 /* ---------------- support check ---------------- */
-var SUP={xr:false,ar:false,hit:false,dom:false,anch:false};
 function chkCard(state,t,d){
   var e=document.createElement('div');
   e.className='card '+(state?'good':'bad');
@@ -122,96 +263,97 @@ function chkCard(state,t,d){
   $('chk').appendChild(e);
 }
 (async function(){
-  SUP.xr = !!navigator.xr;
-  if(!SUP.xr){
-    chkCard(false,'אין WebXR בדפדפן הזה',
-      'אם זה אייפון — זה צפוי. אפל לא מאפשרת AR בדפדפן בנייד. '+
-      'באנדרואיד נסה Chrome. לפתרון לאייפון צריך עטיפת App Clip, וזה שלב נפרד.');
+  if(!navigator.xr){
+    chkCard(false,'אין מעקב במרחב בדפדפן הזה',
+      'אם זה אייפון — אפל לא מאפשרת זאת בדפדפן. באנדרואיד נסו Chrome.');
     $('go').textContent='לא נתמך במכשיר הזה'; return;
   }
-  try{ SUP.ar = await navigator.xr.isSessionSupported('immersive-ar'); }catch(e){}
-  if(!SUP.ar){
-    chkCard(false,'WebXR קיים אבל מצב AR לא נתמך',
-      'חסרה כנראה האפליקציה Google Play Services for AR (ARCore). '+
-      'התקן או עדכן אותה מחנות Play ורענן את הדף.');
+  var ar=false;
+  try{ ar=await navigator.xr.isSessionSupported('immersive-ar'); }catch(e){}
+  if(!ar){
+    chkCard(false,'מצב AR לא נתמך',
+      'חסרה כנראה האפליקציה Google Play Services for AR. התקינו או עדכנו ורעננו את הדף.');
     $('go').textContent='חסר ARCore'; return;
   }
-  chkCard(true,'מעקב חזותי זמין במכשיר הזה',
-    'המיקום יגיע מהמצלמה והחיישנים יחד, בשש דרגות חופש ובמטרים אמיתיים.');
-  $('go').disabled=false; $('go').textContent='הפעל מעקב';
+  $('go').disabled=false; $('go').textContent='הפעילו את ההדגמה';
 })();
 
 /* ---------------- AR session ---------------- */
-var session=null, gl=null, layer=null, refSpace=null, viewerSpace=null,
-    hitSrc=null, retPose=null, marks=[], t0=0, frames=0, fps=0, lastFps=0,
-    camPos=[0,0,0], camStart=null, trackState='—', fallbackPt=null;
+var session=null,gl=null,layer=null,refSpace=null,viewerSpace=null,hitSrc=null,
+    retPose=null,fallbackPt=null,marks=[],camPos=[0,0,0],prevPos=null,anchorPos=null,
+    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0;
+
+function noSelect(el){ if(el) el.addEventListener('beforexrselect',function(e){e.preventDefault();}); }
 
 $('go').onclick=async function(){
   try{
     var cv=document.createElement('canvas');
     gl=cv.getContext('webgl',{xrCompatible:true,alpha:true,antialias:false});
-    if(!gl) throw new Error('no webgl');
+    if(!gl) throw new Error('WebGL לא זמין');
     if(gl.makeXRCompatible) await gl.makeXRCompatible();
-
-    // nothing is REQUIRED: a missing feature must degrade, not refuse to start.
-    var opt={ optionalFeatures:['hit-test','dom-overlay','anchors','local-floor'],
-              domOverlay:{ root: $('ui') } };
-    session = await navigator.xr.requestSession('immersive-ar', opt);
+    session=await navigator.xr.requestSession('immersive-ar',{
+      optionalFeatures:['hit-test','dom-overlay','anchors','local-floor'],
+      domOverlay:{root:$('ui')}
+    });
   }catch(e){
-    chkCard(false,'הדפדפן סירב לפתוח סשן AR', String(e&&e.message||e));
-    return;
+    chkCard(false,'הדפדפן סירב לפתוח סשן',String(e&&e.message||e)); return;
   }
-
-  // dom-overlay is what makes the HTML interface visible on top of the camera.
-  // Without it NOTHING we draw in DOM is shown, so there is no point continuing
-  // blind -- bail out while we can still put a message on a normal page.
-  var dos = session.domOverlayState;
-  if(!dos || !dos.type){
+  var dos=session.domOverlayState;
+  if(!dos||!dos.type){
     try{ await session.end(); }catch(e){}
     chkCard(false,'הדפדפן לא תומך ב-dom-overlay',
-      'המעקב עובד, אבל הממשק לא יוכל להופיע מעל המצלמה בדפדפן הזה. '+
-      'נסה את אותו קישור ב-Chrome. אם גם שם אין — נצטרך לצייר את הממשק ב-WebGL, וזה שלב נפרד.');
+      'המעקב עובד, אבל הממשק לא יוכל להופיע מעל המצלמה בדפדפן הזה. נסו את אותו קישור ב-Chrome.');
     return;
   }
 
   layer=new XRWebGLLayer(session,gl);
   session.updateRenderState({baseLayer:layer});
-
-  try{ refSpace = await session.requestReferenceSpace('local-floor'); }
-  catch(e){ refSpace = await session.requestReferenceSpace('local'); }
-  viewerSpace = await session.requestReferenceSpace('viewer');
-  try{ if(session.requestHitTestSource) hitSrc = await session.requestHitTestSource({space:viewerSpace}); }
+  try{ refSpace=await session.requestReferenceSpace('local-floor'); }
+  catch(e){ refSpace=await session.requestReferenceSpace('local'); }
+  viewerSpace=await session.requestReferenceSpace('viewer');
+  try{ if(session.requestHitTestSource) hitSrc=await session.requestHitTestSource({space:viewerSpace}); }
   catch(e){ hitSrc=null; }
 
-  $('intro').style.display='none';
-  $('ui').classList.add('on');
-  // taps on the control bar must not place markers
-  ['place','stop'].forEach(function(id){
-    $(id).addEventListener('beforexrselect',function(e){e.preventDefault();});
-  });
-  $('ui').querySelector('.foot').addEventListener('beforexrselect',function(e){e.preventDefault();});
+  ['hudbar','foot','sheet','alert'].forEach(function(id){ noSelect($(id)); });
+  session.addEventListener('select',function(){ if(!$('place').disabled) placeHere(); });
+  session.addEventListener('end',function(){ session=null; $('ui').classList.remove('on'); });
 
-  session.addEventListener('select',function(){ placeHere(); });
-  session.addEventListener('end',function(){
-    session=null; $('ui').classList.remove('on'); $('intro').style.display='flex';
-  });
-  t0=performance.now(); lastFps=t0;
+  $('s1').classList.remove('on');
+  $('ui').classList.add('on');
+  lastFps=performance.now();
   session.requestAnimationFrame(onFrame);
 };
-$('stop').onclick=function(){ if(session) session.end(); };
-$('place').onclick=function(){ placeHere(); };
+
+function refreshPlace(){
+  $('place').disabled = !(sel && (retPose||fallbackPt));
+}
 
 function placeHere(){
-  var p;
-  if(retPose){ p=[retPose[12],retPose[13],retPose[14]]; }
-  else if(fallbackPt){ p=fallbackPt.slice(); }
-  else { return; }
+  if(!sel) { $('tip').textContent='בחרו קודם ציוד מהרשימה'; return; }
+  var p = retPose ? [retPose[12],retPose[13],retPose[14]] : (fallbackPt?fallbackPt.slice():null);
+  if(!p) return;
+  var it=ITEMS.filter(function(i){return i.id===sel;})[0];
   var el=document.createElement('div');
   el.className='mk';
-  el.innerHTML='<div class="dot">🧯</div><div class="tag">מטף כיבוי · <em>—</em></div>';
-  $('ui').appendChild(el);
-  marks.push({p:p, el:el, tag:el.querySelector('em'), born:performance.now()});
-  $('tip').textContent='הסתובב, התרחק, חזור — הסימון צריך להישאר על אותה נקודה';
+  el.innerHTML='<div class="dot"></div><div class="tag"></div>';
+  $('ui').insertBefore(el,$('foot'));
+  var m={it:it,p:p,el:el,dot:el.querySelector('.dot'),tag:el.querySelector('.tag'),
+         was:false,tasks:it.tasks.map(function(t){
+           return {t:t.t,f:t.f,d:t.d,p:t.p};})};
+  marks.push(m);
+  document.querySelectorAll('.chip').forEach(function(c){
+    if(c.dataset.id===sel){ c.classList.add('used'); c.classList.remove('sel'); }
+  });
+  sel=null; refreshPlace();
+  $('done').disabled=false;
+  $('tip').textContent='הסתובבו והתרחקו — הסימון יישאר במקום. התקרבו שוב כדי לראות את המשימות.';
+  if(marks.length===1) setTimeout(function(){ openSheet(m); },500);
+}
+
+function worstOf(m){
+  for(var i=0;i<m.tasks.length;i++) if(m.tasks[i].d==='now') return 'now';
+  for(var j=0;j<m.tasks.length;j++) if(m.tasks[j].d==='soon') return 'soon';
+  return 'ok';
 }
 
 function onFrame(t,frame){
@@ -221,67 +363,163 @@ function onFrame(t,frame){
   if(t-lastFps>500){ fps=Math.round(frames*1000/(t-lastFps)); frames=0; lastFps=t; }
 
   var pose=frame.getViewerPose(refSpace);
-  if(!pose){ trackState='מאתחל'; $('ret').classList.remove('on'); paint(null); return; }
+  if(!pose){ trackState='מאתחל'; $('ret').classList.remove('on'); tele(); return; }
   trackState = pose.emulatedPosition ? 'כיוון בלבד' : 'מעקב מלא';
 
   var pp=pose.transform.position;
   camPos=[pp.x,pp.y,pp.z];
-  if(!camStart) camStart=camPos.slice();
+  /* Distance walked, measured as a chain of waypoints rather than as per-frame
+     path length. Summing every frame counts hand tremor as travel: shaking the
+     phone in place added 12 m in testing. A new waypoint is only committed once
+     the device is WP_MIN from the last one, so jitter below that contributes
+     exactly nothing, while real walking is tracked to within one waypoint. */
+  var frameStep = prevPos ? Math.hypot(camPos[0]-prevPos[0],camPos[1]-prevPos[1],camPos[2]-prevPos[2]) : 0;
+  prevPos=camPos.slice();
+  if(!anchorPos) anchorPos=camPos.slice();
+  if(frameStep>JUMP){            // relocalisation jump, not movement
+    anchorPos=camPos.slice(); jumps++;
+  } else {
+    var fromAnchor=Math.hypot(camPos[0]-anchorPos[0],camPos[1]-anchorPos[1],camPos[2]-anchorPos[2]);
+    if(fromAnchor>WP_MIN){ walked+=fromAnchor; anchorPos=camPos.slice(); }
+  }
 
   var view=pose.views[0];
   var viewM=view.transform.inverse.matrix, projM=view.projectionMatrix;
-  var W=window.innerWidth, H=window.innerHeight;
+  var W=window.innerWidth,H=window.innerHeight;
 
-  // --- reticle from hit-test ---
-  retPose=null;
+  /* reticle */
+  retPose=null; fallbackPt=null;
   if(hitSrc){
     var hits=frame.getHitTestResults(hitSrc);
-    if(hits.length){
-      var hp=hits[0].getPose(refSpace);
-      if(hp) retPose=hp.transform.matrix;
-    }
+    if(hits.length){ var hp=hits[0].getPose(refSpace); if(hp) retPose=hp.transform.matrix; }
   }
   if(retPose){
     var rs=project([retPose[12],retPose[13],retPose[14]],viewM,projM,W,H);
     if(rs){ $('ret').classList.add('on');
-      $('ret').style.transform='translate('+rs.x.toFixed(1)+'px,'+rs.y.toFixed(1)+'px)';
-      $('place').disabled=false;
-    } else { $('ret').classList.remove('on'); }
+      $('ret').style.transform='translate('+rs.x.toFixed(1)+'px,'+rs.y.toFixed(1)+'px)'; }
+    else { $('ret').classList.remove('on'); retPose=null; }
   } else if(!hitSrc){
-    // no hit-test on this browser: aim at a point 2.5 m straight ahead.
-    // still a real world-locked point, just not snapped to a surface.
-    var cm=pose.transform.matrix;                       // camera -> world
-    var fwd=[-cm[8],-cm[9],-cm[10]];
-    fallbackPt=[camPos[0]+fwd[0]*2.5, camPos[1]+fwd[1]*2.5, camPos[2]+fwd[2]*2.5];
+    var cm=pose.transform.matrix;
+    fallbackPt=[camPos[0]-cm[8]*FALLBACK_D, camPos[1]-cm[9]*FALLBACK_D, camPos[2]-cm[10]*FALLBACK_D];
     $('ret').classList.add('on');
     $('ret').style.transform='translate('+(W/2).toFixed(1)+'px,'+(H/2).toFixed(1)+'px)';
-    $('place').disabled=false;
-  } else {
-    $('ret').classList.remove('on');
-    if(!marks.length) $('place').disabled=true;
-  }
+  } else { $('ret').classList.remove('on'); }
+  refreshPlace();
 
-  paint({viewM:viewM,projM:projM,W:W,H:H});
-}
-
-function paint(ctx){
+  /* markers */
   for(var i=0;i<marks.length;i++){
     var m=marks[i];
-    if(!ctx){ m.el.classList.add('behind'); continue; }
-    var s=project(m.p,ctx.viewM,ctx.projM,ctx.W,ctx.H);
-    if(!s || s.off>1.6){ m.el.classList.add('behind'); continue; }
-    m.el.classList.remove('behind');
-    var d=Math.hypot(m.p[0]-camPos[0], m.p[1]-camPos[1], m.p[2]-camPos[2]);
-    var sc=Math.max(.5,Math.min(1.8,2.2/Math.max(d,.5)));
-    m.el.style.transform='translate('+s.x.toFixed(1)+'px,'+s.y.toFixed(1)+'px) '
-      +'translate(-50%,-50%) scale('+sc.toFixed(2)+')';
-    m.tag.textContent=d.toFixed(2)+' מ׳';
+    var d=Math.hypot(m.p[0]-camPos[0],m.p[1]-camPos[1],m.p[2]-camPos[2]);
+    var w=worstOf(m);
+    // state that must stay correct even while the marker is outside the frame
+    m.dot.style.background=COL[w];
+    m.dot.innerHTML=m.it.ic+(w==='now'?'<b>!</b>':'');
+    m.tag.innerHTML=m.it.nm+' · <em>'+d.toFixed(1)+' מ׳</em>';
+    m.el.classList.toggle('near', d<NEAR && w!=='now');
+    m.el.classList.toggle('due',  d<NEAR && w==='now');
+    var s=project(m.p,viewM,projM,W,H);
+    if(!s||s.off>1.5){ m.el.classList.add('off'); }
+    else{
+      m.el.classList.remove('off');
+      var sc=Math.max(.5,Math.min(1.8,2.2/Math.max(d,.5)));
+      m.el.style.transform='translate('+s.x.toFixed(1)+'px,'+s.y.toFixed(1)+'px) '
+        +'translate(-50%,-50%) scale('+sc.toFixed(2)+')';
+    }
+    if(d<NEAR){
+      if(!m.was){ m.was=true; if(!$('sheet').classList.contains('on')) openSheet(m); }
+    } else if(d>FAR && m.was){
+      m.was=false;
+      var pend=m.tasks.filter(function(x){return x.d==='now';})[0];
+      if(pend) fireAlert(m,pend);
+    }
   }
-  var moved = camStart ? Math.hypot(camPos[0]-camStart[0],camPos[1]-camStart[1],camPos[2]-camStart[2]) : 0;
+  tele();
+}
+
+function tele(){
   $('tele').innerHTML =
       '<span class="'+(trackState==='מעקב מלא'?'':'w')+'">'+trackState+'</span><br>'
-    + 'XYZ <b>'+camPos[0].toFixed(2)+' '+camPos[1].toFixed(2)+' '+camPos[2].toFixed(2)+'</b><br>'
-    + 'הלכת <b>'+moved.toFixed(2)+'</b> מ׳ · '+fps+'fps<br>'
-    + 'סימונים <b>'+marks.length+'</b>'+(hitSrc?' · hit-test':' · ללא hit-test');
+    + 'הלכתם <b>'+walked.toFixed(1)+'</b> מ׳<br>'
+    + 'סימונים <b>'+marks.length+'</b> · '+fps+'fps'+(jumps?' · קפיצות '+jumps:'');
 }
+
+/* ---------------- task sheet ---------------- */
+function openSheet(m){
+  $('scard').innerHTML=
+    '<div class="ic">'+m.it.ic+'</div>'+
+    '<h3>'+m.it.nm+'</h3>'+
+    '<div class="loc">המערכת זיהתה שאתם כאן</div>'+
+    m.tasks.map(function(t){
+      return '<div class="task"><div class="r"><span class="nm">'+t.t+'</span>'+
+             '<span class="freq">'+t.f+'</span>'+
+             '<span class="due d-'+t.d+'">'+DUE[t.d]+'</span></div><p>'+t.p+'</p></div>';
+    }).join('')+
+    '<button class="pri" style="width:100%;margin-top:8px" id="cl">סגור</button>';
+  $('sheet').classList.add('on');
+  $('cl').onclick=function(){ $('sheet').classList.remove('on'); };
+}
+$('sheet').onclick=function(e){ if(e.target.id==='sheet') $('sheet').classList.remove('on'); };
+
+/* ---------------- alert ---------------- */
+var alertFor=null, alertCount=0;
+function fireAlert(m,t){
+  alertFor={m:m,t:t}; alertCount++;
+  $('alertTxt').innerHTML='<b>'+m.it.nm+' — '+t.t+'</b><br>'+
+    'עוד אפשר לחזור ולהשלים. אחרי שתצאו מהאגף זה ייסגר כחריגה.';
+  $('alert').classList.add('on');
+}
+$('aClose').onclick=function(){ $('alert').classList.remove('on'); };
+$('aFix').onclick=function(){
+  $('alert').classList.remove('on');
+  if(alertFor){ alertFor.t.d='ok'; alertFor=null; }
+};
+
+/* ---------------- place / done ---------------- */
+$('place').onclick=function(){ placeHere(); };
+$('done').onclick=function(){
+  var tasks=0,daily=0,rare=0,open=0;
+  marks.forEach(function(m){
+    tasks+=m.tasks.length;
+    m.tasks.forEach(function(t){
+      if(t.f.indexOf('ביום')>-1) daily++;
+      if(t.f.indexOf('שנים')>-1||t.f.indexOf('שנתי')>-1) rare++;
+      if(t.d==='now') open++;
+    });
+  });
+  window.SUMMARY={marks:marks.length,tasks:tasks,daily:daily,rare:rare,
+                  walked:+walked.toFixed(1),alerts:alertCount,open:open};
+  $('sum').innerHTML=
+    '<div class="r"><span>ציוד שסימנתם</span><b>'+marks.length+'</b></div>'+
+    '<div class="r"><span>משימות שנגזרו מהן</span><b>'+tasks+'</b></div>'+
+    '<div class="r"><span>מהן יומיומיות</span><b>'+daily+'</b></div>'+
+    '<div class="r"><span>מהן שנתיות ומעלה</span><b>'+rare+'</b></div>'+
+    '<div class="r"><span>מטרים שהמערכת מדדה</span><b>'+walked.toFixed(1)+'</b></div>'+
+    '<div class="r"><span>התראות שנשלחו בזמן</span><b>'+alertCount+'</b></div>'+
+    '<div class="r"><span>כמה מהן צריך לזכור</span><b>0</b></div>';
+  if(session) session.end();
+  $('s3').classList.add('on');
+};
+$('again').onclick=function(){ location.reload(); };
+
+/* ---------------- lead ---------------- */
+$('send').onclick=function(){
+  var nm=$('nm').value.trim(), ph=$('ph').value.trim();
+  if(!nm||!ph){ $('sendNote').style.display='block';
+    $('sendNote').textContent='שם וטלפון, ונחזור אליכם מחר.'; return; }
+  var s=window.SUMMARY||{};
+  var txt='סקר אתר — FOCUS GUARD ('+CFG.ev+')\n'
+    +'שם: '+nm+'\n'
+    +'חברה: '+($('co').value.trim()||'—')+'\n'
+    +'בניינים: '+($('bld').value.trim()||'—')+'\n'
+    +'טלפון: '+ph+'\n'
+    +'---\nבהדגמה: '+(s.marks||0)+' ציוד, '+(s.tasks||0)+' משימות, '
+    +(s.walked||0)+' מ׳ הליכה, '+(s.alerts||0)+' התראות.';
+  var url='https://wa.me/'+CFG.wa+'?text='+encodeURIComponent(txt);
+  $('sendNote').style.display='block';
+  $('sendNote').innerHTML='אם וואטסאפ לא נפתח — '
+    +'<a href="mailto:'+CFG.mail+'?subject='+encodeURIComponent('סקר אתר — FOCUS GUARD')
+    +'&body='+encodeURIComponent(txt)+'" style="color:var(--or)">שלחו במייל</a>';
+  $('send').textContent='נשלח — נחזור אליכם מחר';
+  window.open(url,'_blank');
+};
 </script></body></html>
