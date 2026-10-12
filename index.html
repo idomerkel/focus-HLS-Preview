@@ -48,6 +48,32 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
   line-height:1.5;font-variant-numeric:tabular-nums}
 .tele b{color:var(--or)} .tele .w{color:var(--amber)}
 
+/* Proximity feedback lives on the SCREEN, not on the marker. When you reach a
+   piece of equipment it sits at your feet or beside you, outside the camera's
+   field of view -- a pulse drawn on the marker is invisible exactly when it
+   matters. The glow and the banner cannot leave the frame. */
+#glow{position:absolute;inset:0;pointer-events:none;z-index:4;display:none;border-radius:2px}
+#glow.on{display:block}
+#glow.near{box-shadow:inset 0 0 0 3px rgba(235,135,45,.9), inset 0 0 44px 10px rgba(235,135,45,.30);
+  animation:gl 1.8s ease-in-out infinite}
+#glow.due{box-shadow:inset 0 0 0 3px rgba(229,72,77,.95), inset 0 0 44px 10px rgba(229,72,77,.34);
+  animation:gl 1.1s ease-in-out infinite}
+@keyframes gl{0%,100%{opacity:.55}50%{opacity:1}}
+
+#prox{position:absolute;left:12px;right:12px;top:calc(var(--st) + 56px);z-index:5;display:none;
+  background:rgba(6,14,22,.90);border:1px solid var(--edge);border-radius:12px;
+  padding:9px 12px;align-items:center;gap:11px}
+#prox.on{display:flex}
+#prox.lvl-due{border-color:var(--red)} #prox.lvl-near{border-color:var(--or)}
+#prox .ar{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--edge);
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--or);
+  transition:transform .12s linear}
+#prox .nm{font-size:14.5px;font-weight:600}
+#prox .st{font-size:12px;color:var(--dim)}
+#prox .ds{margin-inline-start:auto;font-size:19px;font-weight:700;color:var(--or);
+  font-variant-numeric:tabular-nums}
+#prox.lvl-due .ds,#prox.lvl-due .ar{color:var(--red)}
+
 #ret{position:absolute;left:0;top:0;width:62px;height:62px;margin:-31px 0 0 -31px;
   pointer-events:none;display:none;will-change:transform}
 #ret.on{display:block}
@@ -101,7 +127,7 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
 .task p{font-size:13px;color:var(--dim);margin:0}
 
 /* ---------- alert ---------- */
-.alert{position:absolute;left:12px;right:12px;top:calc(var(--st) + 58px);z-index:40;
+.alert{position:absolute;left:12px;right:12px;top:calc(var(--st) + 108px);z-index:40;
   background:#1A1116;border:1px solid var(--red);border-radius:12px;padding:14px 15px;display:none;
   box-shadow:0 12px 34px rgba(0,0,0,.65)}
 .alert.on{display:block;animation:drop .28s ease-out}
@@ -151,6 +177,10 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
     <div class="tele" id="tele"></div>
   </div>
 
+  <div id="glow"></div>
+  <div id="prox"><div class="ar" id="proxAr">▲</div>
+    <div><div class="nm" id="proxNm"></div><div class="st" id="proxSt"></div></div>
+    <div class="ds" id="proxDs"></div></div>
   <div id="ret"><i></i><i></i></div>
 
   <div class="alert" id="alert">
@@ -227,7 +257,7 @@ var CFG={ wa:'972546694750', mail:'idomerkel@gmail.com', ev:'CBRE 18.11' };
    the clip is published by the provider, the visitor taps one card, and nothing
    stays installed. Swap the provider here if needed. */
 var IOS_BRIDGE='https://appclip.needle.tools/ar?url=';
-var NEAR=1.6, FAR=3.0, FALLBACK_D=2.5;
+var NEAR=1.6, APPROACH=2.8, FAR=3.0, FALLBACK_D=2.5;
 var WP_MIN=0.15, JUMP=0.5;   // waypoint spacing (m) and single-frame jump cutoff (m)
 
 var ITEMS=[
@@ -477,16 +507,23 @@ function onFrame(t,frame){
   }
 
   /* markers */
+  var best=null, bestD=1e9, bestLos=0;
   for(var i=0;i<marks.length;i++){
     var m=marks[i];
     var d=Math.hypot(m.p[0]-camPos[0],m.p[1]-camPos[1],m.p[2]-camPos[2]);
+    /* Arrival is decided on the HORIZONTAL distance, not the line of sight.
+       A phone is held ~1.5 m up, so a marker on the floor is still 1.5 m away
+       in 3D when you are standing on top of it -- judging by line of sight you
+       would have to straddle the equipment before the system noticed. The
+       number on screen stays the true line-of-sight distance. */
+    var dh=Math.hypot(m.p[0]-camPos[0],m.p[2]-camPos[2]);
     var w=worstOf(m);
     // state that must stay correct even while the marker is outside the frame
     m.dot.style.background=COL[w];
     m.dot.innerHTML=m.it.ic+(w==='now'?'<b>!</b>':'');
     m.tag.innerHTML=m.it.nm+' · <em>'+d.toFixed(1)+' מ׳</em>';
-    m.el.classList.toggle('near', d<NEAR && w!=='now');
-    m.el.classList.toggle('due',  d<NEAR && w==='now');
+    m.el.classList.toggle('near', dh<NEAR && w!=='now');
+    m.el.classList.toggle('due',  dh<NEAR && w==='now');
     var s=project(m.p,viewM,projM,W,H);
     if(!s||s.off>1.5){ m.el.classList.add('off'); }
     else{
@@ -495,14 +532,16 @@ function onFrame(t,frame){
       m.el.style.transform='translate('+s.x.toFixed(1)+'px,'+s.y.toFixed(1)+'px) '
         +'translate(-50%,-50%) scale('+sc.toFixed(2)+')';
     }
-    if(d<NEAR){
+    if(dh<bestD){ bestD=dh; best=m; bestLos=d; }
+    if(dh<NEAR){
       if(!m.was){ m.was=true; if(!$('sheet').classList.contains('on')) openSheet(m); }
-    } else if(d>FAR && m.was){
+    } else if(dh>FAR && m.was){
       m.was=false;
       var pend=m.tasks.filter(function(x){return x.d==='now';})[0];
       if(pend) fireAlert(m,pend);
     }
   }
+  proximity(best,bestD,bestLos,pose);
   tele();
 }
 
@@ -510,6 +549,32 @@ function onFrame(t,frame){
    developer needs lives behind ?dev=1 so the booth stays clean. */
 var DEV=/[?&]dev=1/.test(location.search);
 var enabledFeat='';
+/* Horizontal bearing to a marker, in degrees, 0 = straight ahead, positive =
+   to the right on screen. Used to rotate the arrow so the guard can find a
+   marker that is behind him. */
+function bearingTo(m,pose){
+  var cm=pose.transform.matrix;
+  var fx=-cm[8], fz=-cm[10], fl=Math.hypot(fx,fz)||1; fx/=fl; fz/=fl;
+  var tx=m.p[0]-camPos[0], tz=m.p[2]-camPos[2], tl=Math.hypot(tx,tz)||1; tx/=tl; tz/=tl;
+  return Math.atan2(fx*tz-fz*tx, fx*tx+fz*tz)*180/Math.PI;
+}
+function proximity(m,d,los,pose){
+  var g=$('glow'), pr=$('prox');
+  if(!m || d>APPROACH){
+    g.className=''; pr.className=''; return;
+  }
+  var w=worstOf(m), lvl=(w==='now')?'due':'near';
+  pr.className='on lvl-'+lvl;
+  $('proxNm').textContent=m.it.nm;
+  $('proxSt').textContent = (w==='now') ? 'משימה שדורשת טיפול'
+                          : (w==='soon' ? 'משימה מתקרבת' : 'הכול בתוקף');
+  $('proxDs').textContent=los.toFixed(1)+' מ׳';
+  var ang=bearingTo(m,pose);
+  $('proxAr').style.transform='rotate('+ang.toFixed(0)+'deg)';
+  /* the glow only lights up on arrival, so approaching and arriving look different */
+  g.className = (d<NEAR) ? ('on '+lvl) : '';
+}
+
 function tele(){
   var h = 'הלכתם <b>'+walked.toFixed(1)+'</b> מ׳';
   if(marks.length) h += '<br>סימונים <b>'+marks.length+'</b>';
