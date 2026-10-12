@@ -48,11 +48,21 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
   line-height:1.5;font-variant-numeric:tabular-nums}
 .tele b{color:var(--or)} .tele .w{color:var(--amber)}
 
+#planes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+#planes polygon{stroke-width:1.5;vector-effect:non-scaling-stroke}
+#planes .h{fill:rgba(235,135,45,.13);stroke:rgba(235,135,45,.75)}
+#planes .v{fill:rgba(39,90,130,.20);stroke:rgba(109,170,220,.75)}
+#scan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;
+  background:rgba(6,14,22,.82);border:1px solid var(--edge);border-radius:11px;
+  padding:13px 16px;font-size:13.5px;color:var(--dim);text-align:center;max-width:74%;display:none}
+#scan.on{display:block}
 #ret{position:absolute;left:0;top:0;width:62px;height:62px;margin:-31px 0 0 -31px;
   pointer-events:none;display:none;will-change:transform}
 #ret.on{display:block}
 #ret i{position:absolute;inset:0;border:2px solid rgba(235,135,45,.95);border-radius:50%}
 #ret i:nth-child(2){inset:22px;border-width:1.5px;border-color:rgba(255,255,255,.85)}
+#ret.free i{border-style:dashed;border-color:rgba(255,255,255,.9)}
+#ret.free i:nth-child(2){border-style:solid;border-color:rgba(235,135,45,.9)}
 
 .mk{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;
   pointer-events:none;will-change:transform}
@@ -130,8 +140,9 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
     <p>ההדגמה מקבלת את מיקום המכשיר מהמעקב החזותי של הטלפון — אותו עיקרון
        שעליו עובדת המערכת באתר. ניענוע הטלפון במקום לא יזיז כלום.</p>
     <ol>
-      <li>הזיזו את הטלפון לאט עד שיופיע עיגול כתום על ציוד או קיר.</li>
-      <li>בחרו ציוד מהרשימה והקישו ״הנח כאן״.</li>
+      <li>בחרו ציוד מהרשימה, כוונו אליו, והקישו ״הנח כאן״.</li>
+      <li>השטחים שהטלפון זיהה נצבעים על הווידאו — כתום לרצפה ומשטחים אופקיים, כחול לקירות. שם ההנחה מדויקת.</li>
+      <li>עיגול מלא = נצמד למשטח. עיגול מקווקו = הנחה חופשית לפניכם. שניהם נעולים בחדר.</li>
       <li>הסתובבו והתרחקו — הסימון יישאר בדיוק שם.</li>
       <li>התקרבו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
       <li>התרחקו בלי לבצע — ותקבלו את ההתראה שהמערכת שולחת בשטח.</li>
@@ -149,7 +160,10 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
     <div class="tele" id="tele"></div>
   </div>
 
+  <svg id="planes" preserveAspectRatio="none"></svg>
   <div id="ret"><i></i><i></i></div>
+
+  <div id="scan">הזיזו את הטלפון לצדדים — הטלפון מחפש משטחים</div>
 
   <div class="alert" id="alert">
     <div class="h"><span>⚠</span><span>התרחקת — משימה לא בוצעה</span></div>
@@ -163,12 +177,36 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
   <div class="sheet" id="sheet"><div class="scard" id="scard"></div></div>
 
   <div class="foot" id="foot">
-    <div class="tip" id="tip">הזיזו את הטלפון לאט עד שיופיע העיגול הכתום</div>
+    <div class="tip" id="tip">בחרו ציוד מהרשימה</div>
     <div class="chips" id="chips"></div>
     <div class="acts">
       <button class="pri" id="place" disabled>הנח כאן</button>
       <button class="sec" id="done" disabled>סיום</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ 2b. iPhone ============ -->
+<div class="screen" id="s2">
+  <div class="sin">
+    <div class="kick">אייפון</div>
+    <h1>באייפון ההדגמה נפתחת דרך גשר של אפל</h1>
+    <p>אפל לא מאפשרת מעקב במרחב בדפדפן באייפון — זו מגבלה שלה, לא של ההדגמה.
+       הפתרון הוא כרטיס App Clip: הקשה אחת, אותה הדגמה בדיוק, מעקב אמיתי של ARKit.</p>
+    <div class="card">
+      <div class="t">מה תראו</div>
+      <div class="d">יופיע כרטיס בשם Needle Go — זה הגשר שמריץ את ההדגמה.
+        לא מותקנת אפליקציה, לא נדרשת חנות, ולא נשאר כלום על הטלפון.</div>
+    </div>
+    <div class="card">
+      <div class="t">אם הכרטיס לא עולה</div>
+      <div class="d">הגשר עובד רק מתוך Safari. אם פתחתם את הקישור מתוך אפליקציה
+        אחרת — העבירו אותו ל-Safari ונסו שוב.</div>
+    </div>
+  </div>
+  <div class="sfoot">
+    <button class="pri" id="iosGo">פתחו את ההדגמה</button>
+    <button class="sec" id="iosSkip">דלגו לסקר</button>
   </div>
 </div>
 
@@ -196,6 +234,11 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
 <script>
 'use strict';
 var CFG={ wa:'972546694750', mail:'idomerkel@gmail.com', ev:'CBRE 18.11' };
+/* iPhone bridge. Apple allows no AR in mobile Safari, so an App Clip hosts the
+   very same page over ARKit. No Apple developer account and nothing to build:
+   the clip is published by the provider, the visitor taps one card, and nothing
+   stays installed. Swap the provider here if needed. */
+var IOS_BRIDGE='https://appclip.needle.tools/ar?url=';
 var NEAR=1.6, FAR=3.0, FALLBACK_D=2.5;
 var WP_MIN=0.15, JUMP=0.5;   // waypoint spacing (m) and single-frame jump cutoff (m)
 
@@ -232,6 +275,39 @@ function mulMV(m,v){
            m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
            m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3] ];
 }
+function ndcToPx(v,W,H){                   // clip space -> CSS pixels
+  var w=v[3];
+  return { x:((v[0]/w)*0.5+0.5)*W, y:(1-((v[1]/w)*0.5+0.5))*H };
+}
+/* Clip a polygon in homogeneous clip space against all six frustum planes
+   (Sutherland-Hodgman, one pass per plane). Clipping only against the near
+   plane is not enough: the floor plane runs under and behind the camera, and a
+   vertex left just in front of the lens projects to tens of thousands of
+   pixels. Clipping against the sides too keeps every vertex on screen. */
+var CLIP_PLANES=[
+  function(v){ return v[3]-1e-4; },        // w > 0
+  function(v){ return v[2]+v[3]; },        // near
+  function(v){ return v[0]+v[3]; },        // left
+  function(v){ return v[3]-v[0]; },        // right
+  function(v){ return v[1]+v[3]; },        // bottom
+  function(v){ return v[3]-v[1]; }         // top
+];
+function clipFrustum(poly){
+  for(var k=0;k<CLIP_PLANES.length && poly.length;k++){
+    var f=CLIP_PLANES[k], out=[], n=poly.length;
+    for(var i=0;i<n;i++){
+      var a=poly[i], b=poly[(i+1)%n], da=f(a), db=f(b);
+      if(da>=0) out.push(a);
+      if((da>=0)!==(db>=0)){
+        var t=da/(da-db);
+        out.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t,
+                  a[2]+(b[2]-a[2])*t, a[3]+(b[3]-a[3])*t]);
+      }
+    }
+    poly=out;
+  }
+  return poly;
+}
 function project(world,viewM,projM,W,H){
   var vp=mulMV(viewM,[world[0],world[1],world[2],1]);
   if(vp[2]>-0.05) return null;
@@ -262,10 +338,36 @@ function chkCard(state,t,d){
   e.innerHTML='<div class="t">'+(state?'✓ ':'✗ ')+t+'</div><div class="d">'+d+'</div>';
   $('chk').appendChild(e);
 }
+function isApple(){
+  var ua=navigator.userAgent;
+  if(/iPhone|iPod/.test(ua)) return true;
+  if(/iPad/.test(ua)) return true;
+  // iPadOS reports itself as a Mac; a Mac with a touch screen does not exist
+  if(/MacIntel|Mac OS X/.test(navigator.platform+' '+ua) && navigator.maxTouchPoints>1) return true;
+  // last resort: real Safari (not Chrome/Edge/Android dressed as Safari) on a touch device
+  return /Safari/.test(ua) && !/Chrome|Chromium|Android|Edg|CriOS|FxiOS|SamsungBrowser/.test(ua)
+         && navigator.maxTouchPoints>0;
+}
+$('iosGo').onclick=function(){
+  var here=location.href.split('#')[0];
+  here += (here.indexOf('?')>-1?'&':'?')+'native=1';
+  location.href = IOS_BRIDGE + encodeURIComponent(here);
+};
+$('iosSkip').onclick=function(){
+  $('sum').style.display='none';
+  $('s1').classList.remove('on'); $('s2').classList.remove('on');
+  $('s3').classList.add('on');
+};
+
 (async function(){
   if(!navigator.xr){
+    if(isApple() && !/[?&]native=1/.test(location.search)){
+      $('s1').classList.remove('on'); $('s2').classList.add('on'); return;
+    }
     chkCard(false,'אין מעקב במרחב בדפדפן הזה',
-      'אם זה אייפון — אפל לא מאפשרת זאת בדפדפן. באנדרואיד נסו Chrome.');
+      isApple()
+        ? 'הגשר לאייפון לא הצליח לטעון את ההדגמה. נסו לפתוח את הקישור ישירות ב-Safari.'
+        : 'באנדרואיד נסו Chrome, וּודאו שהאפליקציה Google Play Services for AR מותקנת.');
     $('go').textContent='לא נתמך במכשיר הזה'; return;
   }
   var ar=false;
@@ -281,7 +383,7 @@ function chkCard(state,t,d){
 /* ---------------- AR session ---------------- */
 var session=null,gl=null,layer=null,refSpace=null,viewerSpace=null,hitSrc=null,
     retPose=null,fallbackPt=null,marks=[],camPos=[0,0,0],prevPos=null,anchorPos=null,
-    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0;
+    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0,aimMode='free';
 
 function noSelect(el){ if(el) el.addEventListener('beforexrselect',function(e){e.preventDefault();}); }
 
@@ -325,7 +427,7 @@ $('go').onclick=async function(){
 };
 
 function refreshPlace(){
-  $('place').disabled = !(sel && (retPose||fallbackPt));
+  $('place').disabled = !sel;          // a surface is no longer required
 }
 
 function placeHere(){
@@ -393,18 +495,30 @@ function onFrame(t,frame){
     var hits=frame.getHitTestResults(hitSrc);
     if(hits.length){ var hp=hits[0].getPose(refSpace); if(hp) retPose=hp.transform.matrix; }
   }
-  if(retPose){
-    var rs=project([retPose[12],retPose[13],retPose[14]],viewM,projM,W,H);
-    if(rs){ $('ret').classList.add('on');
-      $('ret').style.transform='translate('+rs.x.toFixed(1)+'px,'+rs.y.toFixed(1)+'px)'; }
-    else { $('ret').classList.remove('on'); retPose=null; }
-  } else if(!hitSrc){
+  var rs = retPose ? project([retPose[12],retPose[13],retPose[14]],viewM,projM,W,H) : null;
+  if(retPose && rs){
+    /* ARCore found a real surface under the crosshair */
+    $('ret').classList.add('on'); $('ret').classList.remove('free');
+    $('ret').style.transform='translate('+rs.x.toFixed(1)+'px,'+rs.y.toFixed(1)+'px)';
+    aimMode='surface';
+  } else {
+    /* No surface: plain walls, thin objects and open air give ARCore nothing to
+       latch onto. Aim freely instead -- a point FALLBACK_D straight ahead. It is
+       still a real world-locked point, it just is not snapped to geometry. */
+    retPose=null;
     var cm=pose.transform.matrix;
     fallbackPt=[camPos[0]-cm[8]*FALLBACK_D, camPos[1]-cm[9]*FALLBACK_D, camPos[2]-cm[10]*FALLBACK_D];
-    $('ret').classList.add('on');
+    $('ret').classList.add('on'); $('ret').classList.add('free');
     $('ret').style.transform='translate('+(W/2).toFixed(1)+'px,'+(H/2).toFixed(1)+'px)';
-  } else { $('ret').classList.remove('on'); }
+    aimMode='free';
+  }
+  drawPlanes(frame,viewM,projM,W,H);
   refreshPlace();
+  if(!marks.length){
+    $('tip').textContent = !sel ? 'בחרו ציוד מהרשימה'
+      : (aimMode==='surface' ? 'זוהה משטח — כוונו והקישו ״הנח כאן״'
+                             : 'אין משטח מזוהה — ההנחה תהיה ' + FALLBACK_D.toFixed(1) + ' מ׳ לפניכם');
+  }
 
   /* markers */
   for(var i=0;i<marks.length;i++){
@@ -436,11 +550,48 @@ function onFrame(t,frame){
   tele();
 }
 
+var planeCount=0, planeSupport=null;
+function drawPlanes(frame,viewM,projM,W,H){
+  if(!frame.detectedPlanes){
+    if(planeSupport===null){ planeSupport=false; $('planes').innerHTML=''; }
+    return;
+  }
+  planeSupport=true;
+  var svg=$('planes'), parts=[], n=0;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  frame.detectedPlanes.forEach(function(pl){
+    var pp;
+    try{ pp=frame.getPose(pl.planeSpace,refSpace); }catch(e){ return; }
+    if(!pp||!pl.polygon||pl.polygon.length<3) return;
+    var M=pp.transform.matrix, vs=[];
+    for(var i=0;i<pl.polygon.length;i++){
+      var q=pl.polygon[i];
+      var wp=mulMV(M,[q.x,q.y,q.z,1]);                 // plane space -> world
+      var vv=mulMV(viewM,[wp[0],wp[1],wp[2],1]);       // world -> view
+      vs.push(mulMV(projM,vv));                        // view -> clip
+    }
+    var cl=clipFrustum(vs);
+    if(cl.length<3) return;
+    var pts=[];
+    for(var j=0;j<cl.length;j++){
+      var sp=ndcToPx(cl[j],W,H);
+      pts.push(sp.x.toFixed(0)+','+sp.y.toFixed(0));
+    }
+    n++;
+    parts.push('<polygon class="'+(pl.orientation==='vertical'?'v':'h')
+              +'" points="'+pts.join(' ')+'"/>');
+  });
+  planeCount=n;
+  svg.innerHTML=parts.join('');
+  $('scan').classList.toggle('on', n===0 && !marks.length);
+}
+
 function tele(){
   $('tele').innerHTML =
       '<span class="'+(trackState==='מעקב מלא'?'':'w')+'">'+trackState+'</span><br>'
     + 'הלכתם <b>'+walked.toFixed(1)+'</b> מ׳<br>'
-    + 'סימונים <b>'+marks.length+'</b> · '+fps+'fps'+(jumps?' · קפיצות '+jumps:'');
+    + 'סימונים <b>'+marks.length+'</b> · '+fps+'fps'+(jumps?' · קפיצות '+jumps:'')
+    + (planeSupport===false?'<br>ללא מפת משטחים':'<br>משטחים <b>'+planeCount+'</b>');
 }
 
 /* ---------------- task sheet ---------------- */
