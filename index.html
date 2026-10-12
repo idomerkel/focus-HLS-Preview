@@ -1,111 +1,287 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>FOCUS — בדיקת יכולות AR</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>FOCUS GUARD — מנוע מעקב</title>
 <style>
-:root{--navy:#0A1628;--panel:#17222D;--edge:#2B3B4C;--ink:#E8EEF4;--dim:#8DA0B3;
-  --ok:#3FB984;--no:#E5484D;--amber:#E0A02E;--or:#EB872D}
-*{box-sizing:border-box}
-body{margin:0;background:var(--navy);color:var(--ink);padding:18px 16px 40px;
+:root{--navy:#0A1628;--panel:#17222D;--panel2:#1C2937;--edge:#2B3B4C;
+  --ink:#E8EEF4;--dim:#8DA0B3;--faint:#5E7085;--or:#EB872D;--bl:#275A82;
+  --ok:#3FB984;--no:#E5484D;--amber:#E0A02E;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--navy);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Hebrew",Arial,sans-serif;
-  font-size:16px;line-height:1.5}
-h1{font-size:21px;margin:0 0 4px}
-.sub{color:var(--dim);font-size:13px;margin-bottom:18px}
-.row{display:flex;align-items:flex-start;gap:9px;background:var(--panel);border:1px solid var(--edge);
-  border-radius:9px;padding:11px 12px;margin-bottom:7px}
-.row .m{flex:0 0 auto;font-weight:700;width:22px;text-align:center}
-.row .k{font-weight:600;font-size:14.5px}
-.row .v{color:var(--dim);font-size:12.5px;word-break:break-word}
-.y{color:var(--ok)}.n{color:var(--no)}.q{color:var(--amber)}
-h2{font-size:13px;letter-spacing:1.6px;color:var(--or);margin:22px 0 8px;font-weight:700}
-#verdict{background:var(--panel);border:1px solid var(--or);border-radius:11px;padding:14px;margin-bottom:20px;font-size:15px}
-button{font:inherit;font-weight:600;background:var(--or);color:#1A0F04;border:none;border-radius:9px;
-  padding:13px 16px;width:100%;margin-top:14px;cursor:pointer}
-pre{background:#0D1620;border:1px solid var(--edge);border-radius:8px;padding:10px;
-  font-size:11px;overflow-x:auto;color:var(--dim);direction:ltr;text-align:left}
+  font-size:16px;line-height:1.45}
+
+/* ---------- intro / unsupported ---------- */
+#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  padding:calc(var(--st) + 26px) 22px calc(14px + var(--sb));overflow-y:auto}
+.kick{font-size:11px;letter-spacing:2.6px;color:var(--or);font-weight:700}
+h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
+#intro p{font-size:15px;color:var(--dim);margin:0 0 14px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:11px;padding:14px;margin-bottom:12px}
+.card .t{font-size:13px;font-weight:700;margin-bottom:5px}
+.card .d{font-size:13px;color:var(--dim)}
+.card.bad{border-color:var(--no)}.card.good{border-color:var(--ok)}
+button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:14px 16px;font-weight:600;font-size:15.5px}
+.pri{background:var(--or);color:#1A0F04;width:100%}
+.sec{background:var(--panel2);color:var(--dim);border:1px solid var(--edge)}
+button:disabled{opacity:.4}
+.spacer{flex:1 0 10px}
+
+/* ---------- AR overlay ---------- */
+#ui{position:fixed;inset:0;z-index:10;display:none}
+#ui.on{display:block}
+.hudbar{position:absolute;top:0;left:0;right:0;padding:calc(var(--st) + 10px) 14px 10px;
+  background:linear-gradient(to bottom,rgba(6,14,22,.86),rgba(6,14,22,0));
+  display:flex;align-items:flex-start;gap:10px;pointer-events:none}
+.hudbar .b{font-size:14px;font-weight:700}
+.hudbar .s{font-size:9.5px;letter-spacing:1.5px;color:var(--faint)}
+.tele{margin-inline-start:auto;text-align:left;font-size:11px;color:var(--dim);
+  line-height:1.5;font-variant-numeric:tabular-nums;direction:ltr}
+.tele b{color:var(--or)}
+.tele .w{color:var(--amber)}
+
+#ret{position:absolute;width:62px;height:62px;margin:-31px 0 0 -31px;left:0;top:0;
+  pointer-events:none;display:none;will-change:transform}
+#ret.on{display:block}
+#ret i{position:absolute;inset:0;border:2px solid rgba(235,135,45,.95);border-radius:50%}
+#ret i:nth-child(2){inset:22px;border-width:1.5px;border-color:rgba(255,255,255,.8)}
+
+.mk{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;
+  pointer-events:none;will-change:transform}
+.mk .dot{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:21px;border:2.5px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.6);background:var(--or)}
+.mk .tag{margin-top:5px;background:rgba(6,14,22,.88);border:1px solid var(--edge);border-radius:12px;
+  padding:3px 9px;font-size:11.5px;white-space:nowrap}
+.mk .tag em{font-style:normal;color:var(--or);font-variant-numeric:tabular-nums}
+.mk.behind{opacity:0}
+
+.foot{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(12px + var(--sb));
+  background:linear-gradient(to top,rgba(6,14,22,.94) 60%,rgba(6,14,22,0))}
+.tip{font-size:13px;color:var(--dim);margin-bottom:10px;text-align:center}
+.acts{display:flex;gap:9px}
+.acts .pri{flex:1}
 </style></head><body>
-<h1>בדיקת יכולות AR</h1>
-<div class="sub">מה הטלפון הזה באמת יודע לעשות בדפדפן. אין מצלמה, אין הרשאות, רק שאילתה.</div>
-<div id="verdict">בודק…</div>
-<h2>מעקב חזותי במרחב</h2><div id="g1"></div>
-<h2>חיישנים</h2><div id="g2"></div>
-<h2>מכשיר</h2><div id="g3"></div>
-<button id="copy">העתק את כל התוצאות</button>
-<pre id="raw"></pre>
+
+<div id="intro">
+  <div class="kick">מנוע מעקב · בדיקה</div>
+  <h1>סימון שננעל על נקודה אמיתית בחדר</h1>
+  <p>הגרסה הזאת לא סופרת צעדים ולא משתמשת במצפן. היא מקבלת את מיקום
+     המכשיר מהמעקב החזותי של הטלפון — אותו מנוע שמשמש אפליקציות AR.
+     ניענוע הטלפון במקום לא יזיז כלום.</p>
+  <div id="chk"></div>
+  <div class="spacer"></div>
+  <button class="pri" id="go" disabled>בודק תמיכה…</button>
+</div>
+
+<div id="ui">
+  <div class="hudbar">
+    <div><div class="b">FOCUS GUARD</div><div class="s">מעקב חזותי · ar1</div></div>
+    <div class="tele" id="tele"></div>
+  </div>
+  <div id="ret"><i></i><i></i></div>
+  <div class="foot">
+    <div class="tip" id="tip">הזז את הטלפון לאט עד שיופיע העיגול הכתום</div>
+    <div class="acts">
+      <button class="pri" id="place" disabled>הנח כאן</button>
+      <button class="sec" id="stop">יציאה</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const R={};
-function add(g,k,state,v){
-  const d=document.createElement('div'); d.className='row';
-  const m=state===true?'<span class="m y">✓</span>':state===false?'<span class="m n">✗</span>':'<span class="m q">?</span>';
-  d.innerHTML=m+'<div><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
-  document.getElementById(g).appendChild(d);
-  R[k]=(state===true?'YES':state===false?'NO':'?')+' | '+v;
+'use strict';
+var $=function(id){return document.getElementById(id);};
+
+/* ---------------- matrix helpers (column-major, like WebXR) ---------------- */
+function mulMV(m,v){            // m:Float32Array(16) col-major, v:[x,y,z,w]
+  return [ m[0]*v[0]+m[4]*v[1]+m[8] *v[2]+m[12]*v[3],
+           m[1]*v[0]+m[5]*v[1]+m[9] *v[2]+m[13]*v[3],
+           m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
+           m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3] ];
+}
+// world point -> CSS pixels. returns null when behind the camera.
+function project(world, viewM, projM, W, H){
+  var vp = mulMV(viewM, [world[0],world[1],world[2],1]);   // world -> view
+  if(vp[2] > -0.05) return null;                            // behind / on the lens
+  var cp = mulMV(projM, vp);                                // view -> clip
+  if(cp[3] <= 0) return null;
+  var ndcx = cp[0]/cp[3], ndcy = cp[1]/cp[3];
+  return { x:(ndcx*0.5+0.5)*W, y:(1-(ndcy*0.5+0.5))*H,
+           depth:-vp[2], off:Math.max(Math.abs(ndcx),Math.abs(ndcy)) };
+}
+
+/* ---------------- support check ---------------- */
+var SUP={xr:false,ar:false,hit:false,dom:false,anch:false};
+function chkCard(state,t,d){
+  var e=document.createElement('div');
+  e.className='card '+(state?'good':'bad');
+  e.innerHTML='<div class="t">'+(state?'✓ ':'✗ ')+t+'</div><div class="d">'+d+'</div>';
+  $('chk').appendChild(e);
 }
 (async function(){
-  // --- WebXR ---
-  const hasXR = !!navigator.xr;
-  add('g1','WebXR API קיים', hasXR, hasXR?'navigator.xr זמין':'navigator.xr לא קיים — אין WebXR בדפדפן הזה');
-  let arOK=false, feats={};
-  if(hasXR){
-    try{ arOK = await navigator.xr.isSessionSupported('immersive-ar'); }catch(e){ arOK=false; }
-    add('g1','מצב immersive-ar', arOK, arOK?'הטלפון יכול להריץ AR אמיתי בדפדפן':'לא נתמך — חסר ARCore או דפדפן לא תומך');
-    if(arOK){
-      for(const f of ['hit-test','dom-overlay','anchors','plane-detection','depth-sensing','light-estimation']){
-        let ok=false;
-        try{ const s=await navigator.xr.requestSession('immersive-ar',{optionalFeatures:[f]}); await s.end(); ok=true; }
-        catch(e){ ok = (''+e).indexOf('user')>-1 ? null : false; }
-        feats[f]=ok;
-      }
-    }
-  } else {
-    add('g1','מצב immersive-ar', false, 'לא נבדק');
+  SUP.xr = !!navigator.xr;
+  if(!SUP.xr){
+    chkCard(false,'אין WebXR בדפדפן הזה',
+      'אם זה אייפון — זה צפוי. אפל לא מאפשרת AR בדפדפן בנייד. '+
+      'באנדרואיד נסה Chrome. לפתרון לאייפון צריך עטיפת App Clip, וזה שלב נפרד.');
+    $('go').textContent='לא נתמך במכשיר הזה'; return;
   }
-  add('g1','hit-test (הנחה על משטח אמיתי)', arOK?null:false, arOK?'נבדק רק בתוך סשן — ראה בהדגמה':'דורש immersive-ar');
-  // --- sensors ---
-  const oriP = (typeof DeviceOrientationEvent!=='undefined' && DeviceOrientationEvent.requestPermission);
-  add('g2','דורש אישור מפורש לחיישנים', !!oriP, oriP?'כן — iOS. צריך הקשה של המשתמש':'לא — אנדרואיד, פתוח');
-  let abs=false, rel=false, aMax=0, n1=0, n2=0;
-  function h1(e){ rel=true; n1++; }
-  function h2(e){ abs=true; n2++; }
-  window.addEventListener('deviceorientation',h1,true);
-  window.addEventListener('deviceorientationabsolute',h2,true);
-  function h3(e){ const a=e.accelerationIncludingGravity; if(!a)return;
-    const m=Math.sqrt((a.x||0)**2+(a.y||0)**2+(a.z||0)**2); if(m>aMax)aMax=m; }
-  window.addEventListener('devicemotion',h3,true);
-  await new Promise(r=>setTimeout(r,1800));
-  window.removeEventListener('deviceorientation',h1,true);
-  window.removeEventListener('deviceorientationabsolute',h2,true);
-  add('g2','deviceorientation', rel, rel?n1+' אירועים ב-1.8 שניות':'שקט — לא התקבל אישור, או אין חיישן');
-  add('g2','deviceorientationabsolute', abs, abs?n2+' אירועים — זרם שני קיים!':'לא קיים — זרם אחד בלבד');
-  add('g2','devicemotion', aMax>0, aMax>0?('שיא תאוצה '+aMax.toFixed(2)+' m/s²'):'שקט');
-  // --- device ---
-  add('g3','מערכת', null, navigator.platform+' · '+(navigator.userAgentData?navigator.userAgentData.platform:'—'));
-  add('g3','דפדפן', null, navigator.userAgent);
-  add('g3','מסך', null, screen.width+'×'+screen.height+' @'+devicePixelRatio+'x');
-  add('g3','מצלמות', null, 'נבדק רק בהדגמה (דורש הרשאה)');
-
-  let v;
-  if(arOK){
-    v='<b>הטלפון הזה תומך ב-AR אמיתי בדפדפן.</b><br>אפשר לבנות הדגמה עם מעקב חזותי מלא — '
-     +'הסימון ננעל על נקודה בחדר ונשאר שם באמת, עם מרחק אמיתי במטרים. '
-     +'תכונות שנמצאו: <span style="direction:ltr;display:inline-block">'
-     +Object.keys(feats).filter(k=>feats[k]===true).join(', ')+'</span>';
-  } else if(hasXR){
-    v='<b>יש WebXR אבל לא AR.</b> כנראה חסר ARCore (Google Play Services for AR) או שהדפדפן לא תומך. '
-     +'כדאי לנסות ב-Chrome ולוודא שהאפליקציה ARCore מותקנת ומעודכנת.';
-  } else {
-    v='<b>אין WebXR בדפדפן הזה.</b> אם זה אייפון — זה צפוי, אפל לא תומכת ב-AR בדפדפן. '
-     +'הפתרון לאייפון הוא מעקב מול תמונת עוגן מודפסת, או ספריית SLAM חיצונית.';
+  try{ SUP.ar = await navigator.xr.isSessionSupported('immersive-ar'); }catch(e){}
+  if(!SUP.ar){
+    chkCard(false,'WebXR קיים אבל מצב AR לא נתמך',
+      'חסרה כנראה האפליקציה Google Play Services for AR (ARCore). '+
+      'התקן או עדכן אותה מחנות Play ורענן את הדף.');
+    $('go').textContent='חסר ARCore'; return;
   }
-  document.getElementById('verdict').innerHTML=v;
-  document.getElementById('raw').textContent =
-    Object.entries(R).map(([k,x])=>k+': '+x).join('\n')
-    + '\nXR_FEATURES: ' + JSON.stringify(feats);
-  document.getElementById('copy').onclick=function(){
-    const t=document.getElementById('raw').textContent;
-    navigator.clipboard.writeText(t).then(()=>{this.textContent='הועתק — הדבק לי כאן';},
-      ()=>{this.textContent='בחר ידנית מהטקסט למטה';});
-  };
+  chkCard(true,'מעקב חזותי זמין במכשיר הזה',
+    'המיקום יגיע מהמצלמה והחיישנים יחד, בשש דרגות חופש ובמטרים אמיתיים.');
+  $('go').disabled=false; $('go').textContent='הפעל מעקב';
 })();
+
+/* ---------------- AR session ---------------- */
+var session=null, gl=null, layer=null, refSpace=null, viewerSpace=null,
+    hitSrc=null, retPose=null, marks=[], t0=0, frames=0, fps=0, lastFps=0,
+    camPos=[0,0,0], camStart=null, trackState='—', fallbackPt=null;
+
+$('go').onclick=async function(){
+  try{
+    var cv=document.createElement('canvas');
+    gl=cv.getContext('webgl',{xrCompatible:true,alpha:true,antialias:false});
+    if(!gl) throw new Error('no webgl');
+    if(gl.makeXRCompatible) await gl.makeXRCompatible();
+
+    // nothing is REQUIRED: a missing feature must degrade, not refuse to start.
+    var opt={ optionalFeatures:['hit-test','dom-overlay','anchors','local-floor'],
+              domOverlay:{ root: $('ui') } };
+    session = await navigator.xr.requestSession('immersive-ar', opt);
+  }catch(e){
+    chkCard(false,'הדפדפן סירב לפתוח סשן AR', String(e&&e.message||e));
+    return;
+  }
+
+  // dom-overlay is what makes the HTML interface visible on top of the camera.
+  // Without it NOTHING we draw in DOM is shown, so there is no point continuing
+  // blind -- bail out while we can still put a message on a normal page.
+  var dos = session.domOverlayState;
+  if(!dos || !dos.type){
+    try{ await session.end(); }catch(e){}
+    chkCard(false,'הדפדפן לא תומך ב-dom-overlay',
+      'המעקב עובד, אבל הממשק לא יוכל להופיע מעל המצלמה בדפדפן הזה. '+
+      'נסה את אותו קישור ב-Chrome. אם גם שם אין — נצטרך לצייר את הממשק ב-WebGL, וזה שלב נפרד.');
+    return;
+  }
+
+  layer=new XRWebGLLayer(session,gl);
+  session.updateRenderState({baseLayer:layer});
+
+  try{ refSpace = await session.requestReferenceSpace('local-floor'); }
+  catch(e){ refSpace = await session.requestReferenceSpace('local'); }
+  viewerSpace = await session.requestReferenceSpace('viewer');
+  try{ if(session.requestHitTestSource) hitSrc = await session.requestHitTestSource({space:viewerSpace}); }
+  catch(e){ hitSrc=null; }
+
+  $('intro').style.display='none';
+  $('ui').classList.add('on');
+  // taps on the control bar must not place markers
+  ['place','stop'].forEach(function(id){
+    $(id).addEventListener('beforexrselect',function(e){e.preventDefault();});
+  });
+  $('ui').querySelector('.foot').addEventListener('beforexrselect',function(e){e.preventDefault();});
+
+  session.addEventListener('select',function(){ placeHere(); });
+  session.addEventListener('end',function(){
+    session=null; $('ui').classList.remove('on'); $('intro').style.display='flex';
+  });
+  t0=performance.now(); lastFps=t0;
+  session.requestAnimationFrame(onFrame);
+};
+$('stop').onclick=function(){ if(session) session.end(); };
+$('place').onclick=function(){ placeHere(); };
+
+function placeHere(){
+  var p;
+  if(retPose){ p=[retPose[12],retPose[13],retPose[14]]; }
+  else if(fallbackPt){ p=fallbackPt.slice(); }
+  else { return; }
+  var el=document.createElement('div');
+  el.className='mk';
+  el.innerHTML='<div class="dot">🧯</div><div class="tag">מטף כיבוי · <em>—</em></div>';
+  $('ui').appendChild(el);
+  marks.push({p:p, el:el, tag:el.querySelector('em'), born:performance.now()});
+  $('tip').textContent='הסתובב, התרחק, חזור — הסימון צריך להישאר על אותה נקודה';
+}
+
+function onFrame(t,frame){
+  if(!session) return;
+  session.requestAnimationFrame(onFrame);
+  frames++;
+  if(t-lastFps>500){ fps=Math.round(frames*1000/(t-lastFps)); frames=0; lastFps=t; }
+
+  var pose=frame.getViewerPose(refSpace);
+  if(!pose){ trackState='מאתחל'; $('ret').classList.remove('on'); paint(null); return; }
+  trackState = pose.emulatedPosition ? 'כיוון בלבד' : 'מעקב מלא';
+
+  var pp=pose.transform.position;
+  camPos=[pp.x,pp.y,pp.z];
+  if(!camStart) camStart=camPos.slice();
+
+  var view=pose.views[0];
+  var viewM=view.transform.inverse.matrix, projM=view.projectionMatrix;
+  var W=window.innerWidth, H=window.innerHeight;
+
+  // --- reticle from hit-test ---
+  retPose=null;
+  if(hitSrc){
+    var hits=frame.getHitTestResults(hitSrc);
+    if(hits.length){
+      var hp=hits[0].getPose(refSpace);
+      if(hp) retPose=hp.transform.matrix;
+    }
+  }
+  if(retPose){
+    var rs=project([retPose[12],retPose[13],retPose[14]],viewM,projM,W,H);
+    if(rs){ $('ret').classList.add('on');
+      $('ret').style.transform='translate('+rs.x.toFixed(1)+'px,'+rs.y.toFixed(1)+'px)';
+      $('place').disabled=false;
+    } else { $('ret').classList.remove('on'); }
+  } else if(!hitSrc){
+    // no hit-test on this browser: aim at a point 2.5 m straight ahead.
+    // still a real world-locked point, just not snapped to a surface.
+    var cm=pose.transform.matrix;                       // camera -> world
+    var fwd=[-cm[8],-cm[9],-cm[10]];
+    fallbackPt=[camPos[0]+fwd[0]*2.5, camPos[1]+fwd[1]*2.5, camPos[2]+fwd[2]*2.5];
+    $('ret').classList.add('on');
+    $('ret').style.transform='translate('+(W/2).toFixed(1)+'px,'+(H/2).toFixed(1)+'px)';
+    $('place').disabled=false;
+  } else {
+    $('ret').classList.remove('on');
+    if(!marks.length) $('place').disabled=true;
+  }
+
+  paint({viewM:viewM,projM:projM,W:W,H:H});
+}
+
+function paint(ctx){
+  for(var i=0;i<marks.length;i++){
+    var m=marks[i];
+    if(!ctx){ m.el.classList.add('behind'); continue; }
+    var s=project(m.p,ctx.viewM,ctx.projM,ctx.W,ctx.H);
+    if(!s || s.off>1.6){ m.el.classList.add('behind'); continue; }
+    m.el.classList.remove('behind');
+    var d=Math.hypot(m.p[0]-camPos[0], m.p[1]-camPos[1], m.p[2]-camPos[2]);
+    var sc=Math.max(.5,Math.min(1.8,2.2/Math.max(d,.5)));
+    m.el.style.transform='translate('+s.x.toFixed(1)+'px,'+s.y.toFixed(1)+'px) '
+      +'translate(-50%,-50%) scale('+sc.toFixed(2)+')';
+    m.tag.textContent=d.toFixed(2)+' מ׳';
+  }
+  var moved = camStart ? Math.hypot(camPos[0]-camStart[0],camPos[1]-camStart[1],camPos[2]-camStart[2]) : 0;
+  $('tele').innerHTML =
+      '<span class="'+(trackState==='מעקב מלא'?'':'w')+'">'+trackState+'</span><br>'
+    + 'XYZ <b>'+camPos[0].toFixed(2)+' '+camPos[1].toFixed(2)+' '+camPos[2].toFixed(2)+'</b><br>'
+    + 'הלכת <b>'+moved.toFixed(2)+'</b> מ׳ · '+fps+'fps<br>'
+    + 'סימונים <b>'+marks.length+'</b>'+(hitSrc?' · hit-test':' · ללא hit-test');
+}
 </script></body></html>
