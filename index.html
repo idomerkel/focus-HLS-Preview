@@ -50,6 +50,8 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
 
 #planes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 #planes polygon{stroke-width:1.5;vector-effect:non-scaling-stroke}
+#planes circle{fill:rgba(235,135,45,.55);stroke:rgba(255,255,255,.55);stroke-width:1}
+#planes circle.far{fill:rgba(235,135,45,.22);stroke:rgba(255,255,255,.22)}
 #planes .h{fill:rgba(235,135,45,.13);stroke:rgba(235,135,45,.75)}
 #planes .v{fill:rgba(39,90,130,.20);stroke:rgba(109,170,220,.75)}
 #scan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;
@@ -141,7 +143,7 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
        שעליו עובדת המערכת באתר. ניענוע הטלפון במקום לא יזיז כלום.</p>
     <ol>
       <li>בחרו ציוד מהרשימה, כוונו אליו, והקישו ״הנח כאן״.</li>
-      <li>השטחים שהטלפון זיהה נצבעים על הווידאו — כתום לרצפה ומשטחים אופקיים, כחול לקירות. שם ההנחה מדויקת.</li>
+      <li>הנקודות הכתומות על הווידאו הן כל המקומות שהטלפון מזהה כמשטח. שם ההנחה מדויקת.</li>
       <li>עיגול מלא = נצמד למשטח. עיגול מקווקו = הנחה חופשית לפניכם. שניהם נעולים בחדר.</li>
       <li>הסתובבו והתרחקו — הסימון יישאר בדיוק שם.</li>
       <li>התקרבו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
@@ -163,7 +165,7 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
   <svg id="planes" preserveAspectRatio="none"></svg>
   <div id="ret"><i></i><i></i></div>
 
-  <div id="scan">הזיזו את הטלפון לצדדים — הטלפון מחפש משטחים</div>
+  <div id="scan">הזיזו את הטלפון לצדדים ולמטה — הטלפון עדיין לא מזהה משטח</div>
 
   <div class="alert" id="alert">
     <div class="h"><span>⚠</span><span>התרחקת — משימה לא בוצעה</span></div>
@@ -383,7 +385,7 @@ $('iosSkip').onclick=function(){
 /* ---------------- AR session ---------------- */
 var session=null,gl=null,layer=null,refSpace=null,viewerSpace=null,hitSrc=null,
     retPose=null,fallbackPt=null,marks=[],camPos=[0,0,0],prevPos=null,anchorPos=null,
-    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0,aimMode='free';
+    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0,aimMode='free',viewMcur=null;
 
 function noSelect(el){ if(el) el.addEventListener('beforexrselect',function(e){e.preventDefault();}); }
 
@@ -415,6 +417,8 @@ $('go').onclick=async function(){
   viewerSpace=await session.requestReferenceSpace('viewer');
   try{ if(session.requestHitTestSource) hitSrc=await session.requestHitTestSource({space:viewerSpace}); }
   catch(e){ hitSrc=null; }
+
+  try{ enabledFeat = (session.enabledFeatures||[]).join(' '); }catch(e){ enabledFeat='—'; }
 
   ['hudbar','foot','sheet','alert'].forEach(function(id){ noSelect($(id)); });
   session.addEventListener('select',function(){ if(!$('place').disabled) placeHere(); });
@@ -487,6 +491,7 @@ function onFrame(t,frame){
 
   var view=pose.views[0];
   var viewM=view.transform.inverse.matrix, projM=view.projectionMatrix;
+  viewMcur=viewM;
   var W=window.innerWidth,H=window.innerHeight;
 
   /* reticle */
@@ -550,16 +555,42 @@ function onFrame(t,frame){
   tele();
 }
 
-var planeCount=0, planeSupport=null;
-function drawPlanes(frame,viewM,projM,W,H){
-  if(!frame.detectedPlanes){
-    if(planeSupport===null){ planeSupport=false; $('planes').innerHTML=''; }
-    return;
+/* ---- placement map -------------------------------------------------------
+   detectedPlanes is absent on many ARCore browsers, so the map cannot rely on
+   it. Instead a grid of hit-test rays is cast across the whole field of view:
+   every ray that lands on a surface is drawn as a dot. Same engine that already
+   produces the centre crosshair, so if the crosshair works, the map works. */
+var GCOLS=5, GROWS=6;
+var gridSrcs=[], gridState='off';      // off | building | ready | unsupported
+var planeCount=0, planeSupport=null, hitDots=0, enabledFeat='';
+
+function buildGrid(projM){
+  gridState='building';
+  var tanX = projM[0] ? 1/projM[0] : 0.55;
+  var tanY = projM[5] ? 1/projM[5] : 0.9;
+  var jobs=[];
+  for(var r=0;r<GROWS;r++){
+    for(var c=0;c<GCOLS;c++){
+      var nx=((c+0.5)/GCOLS)*2-1, ny=1-((r+0.5)/GROWS)*2;
+      var dx=nx*tanX, dy=ny*tanY, dz=-1;
+      var L=Math.sqrt(dx*dx+dy*dy+1);
+      jobs.push(session.requestHitTestSource({ space:viewerSpace,
+        offsetRay:new XRRay({x:0,y:0,z:0,w:1},{x:dx/L,y:dy/L,z:dz/L,w:0}) }));
+    }
   }
-  planeSupport=true;
+  Promise.all(jobs).then(function(list){
+    gridSrcs=list.filter(Boolean); gridState=gridSrcs.length?'ready':'unsupported';
+  }).catch(function(){ gridSrcs=[]; gridState='unsupported'; });
+}
+
+function drawPlanes(frame,viewM,projM,W,H){
   var svg=$('planes'), parts=[], n=0;
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  frame.detectedPlanes.forEach(function(pl){
+  /* The ray grid must be drawn whether or not this browser exposes planes --
+     on most ARCore browsers detectedPlanes is absent, and an early return here
+     is what silently removed the whole map. */
+  planeSupport = !!frame.detectedPlanes;
+  if(planeSupport) frame.detectedPlanes.forEach(function(pl){
     var pp;
     try{ pp=frame.getPose(pl.planeSpace,refSpace); }catch(e){ return; }
     if(!pp||!pl.polygon||pl.polygon.length<3) return;
@@ -582,8 +613,45 @@ function drawPlanes(frame,viewM,projM,W,H){
               +'" points="'+pts.join(' ')+'"/>');
   });
   planeCount=n;
+  drawGrid(frame,projM,W,H,parts);
   svg.innerHTML=parts.join('');
-  $('scan').classList.toggle('on', n===0 && !marks.length);
+  $('scan').classList.toggle('on', (n+hitDots)===0 && !marks.length);
+}
+
+/* Casting 30 rays every frame is wasteful: the room does not change at 60 Hz.
+   The rays are re-cast every GRID_EVERY frames and their WORLD positions kept,
+   then re-projected every frame -- so the dots still track the camera smoothly
+   at a fraction of the cost. */
+var GRID_EVERY=4, gridTick=0, gridHits=[];
+function drawGrid(frame,projM,W,H,parts){
+  if(gridState==='off' && session && viewerSpace && window.XRRay) buildGrid(projM);
+  if(gridState!=='ready'){ hitDots=0; return; }
+
+  if((gridTick++ % GRID_EVERY)===0){
+    gridHits=[];
+    for(var i=0;i<gridSrcs.length;i++){
+      var hs;
+      try{ hs=frame.getHitTestResults(gridSrcs[i]); }catch(e){ continue; }
+      if(!hs.length) continue;
+      var hp=hs[0].getPose(refSpace); if(!hp) continue;
+      var m=hp.transform.matrix;
+      gridHits.push([m[12],m[13],m[14]]);
+    }
+  }
+
+  hitDots=0;
+  for(var k=0;k<gridHits.length;k++){
+    var g=gridHits[k];
+    var d=Math.hypot(g[0]-camPos[0],g[1]-camPos[1],g[2]-camPos[2]);
+    var v=mulMV(projM,mulMV(viewMcur,[g[0],g[1],g[2],1]));
+    if(v[3]<=0) continue;
+    var sp=ndcToPx(v,W,H);
+    if(sp.x<-20||sp.x>W+20||sp.y<-20||sp.y>H+20) continue;
+    hitDots++;
+    var rad=Math.max(3.5,Math.min(11,16/Math.max(d,0.6)));
+    parts.push('<circle class="'+(d>4?'far':'')+'" cx="'+sp.x.toFixed(0)
+      +'" cy="'+sp.y.toFixed(0)+'" r="'+rad.toFixed(1)+'"/>');
+  }
 }
 
 function tele(){
@@ -591,7 +659,10 @@ function tele(){
       '<span class="'+(trackState==='מעקב מלא'?'':'w')+'">'+trackState+'</span><br>'
     + 'הלכתם <b>'+walked.toFixed(1)+'</b> מ׳<br>'
     + 'סימונים <b>'+marks.length+'</b> · '+fps+'fps'+(jumps?' · קפיצות '+jumps:'')
-    + (planeSupport===false?'<br>ללא מפת משטחים':'<br>משטחים <b>'+planeCount+'</b>');
+    + '<br>נקודות הנחה <b>'+hitDots+'</b>'
+    + (planeSupport?' · משטחים '+planeCount:'')
+    + (gridState==='unsupported'?' · רשת לא נתמכת':'')
+    + '<br><span style="font-size:9px;opacity:.75;direction:ltr;display:inline-block">'+enabledFeat+'</span>';
 }
 
 /* ---------------- task sheet ---------------- */
