@@ -48,16 +48,6 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
   line-height:1.5;font-variant-numeric:tabular-nums}
 .tele b{color:var(--or)} .tele .w{color:var(--amber)}
 
-#planes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-#planes polygon{stroke-width:1.5;vector-effect:non-scaling-stroke}
-#planes circle{fill:rgba(235,135,45,.55);stroke:rgba(255,255,255,.55);stroke-width:1}
-#planes circle.far{fill:rgba(235,135,45,.22);stroke:rgba(255,255,255,.22)}
-#planes .h{fill:rgba(235,135,45,.13);stroke:rgba(235,135,45,.75)}
-#planes .v{fill:rgba(39,90,130,.20);stroke:rgba(109,170,220,.75)}
-#scan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;
-  background:rgba(6,14,22,.82);border:1px solid var(--edge);border-radius:11px;
-  padding:13px 16px;font-size:13.5px;color:var(--dim);text-align:center;max-width:74%;display:none}
-#scan.on{display:block}
 #ret{position:absolute;left:0;top:0;width:62px;height:62px;margin:-31px 0 0 -31px;
   pointer-events:none;display:none;will-change:transform}
 #ret.on{display:block}
@@ -143,8 +133,7 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
        שעליו עובדת המערכת באתר. ניענוע הטלפון במקום לא יזיז כלום.</p>
     <ol>
       <li>בחרו ציוד מהרשימה, כוונו אליו, והקישו ״הנח כאן״.</li>
-      <li>הנקודות הכתומות על הווידאו הן כל המקומות שהטלפון מזהה כמשטח. שם ההנחה מדויקת.</li>
-      <li>עיגול מלא = נצמד למשטח. עיגול מקווקו = הנחה חופשית לפניכם. שניהם נעולים בחדר.</li>
+      <li>עיגול מלא = הסימון נצמד למשטח שהטלפון זיהה. עיגול מקווקו = הנחה חופשית לפניכם. שניהם נעולים בחדר.</li>
       <li>הסתובבו והתרחקו — הסימון יישאר בדיוק שם.</li>
       <li>התקרבו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
       <li>התרחקו בלי לבצע — ותקבלו את ההתראה שהמערכת שולחת בשטח.</li>
@@ -162,10 +151,7 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
     <div class="tele" id="tele"></div>
   </div>
 
-  <svg id="planes" preserveAspectRatio="none"></svg>
   <div id="ret"><i></i><i></i></div>
-
-  <div id="scan">הזיזו את הטלפון לצדדים ולמטה — הטלפון עדיין לא מזהה משטח</div>
 
   <div class="alert" id="alert">
     <div class="h"><span>⚠</span><span>התרחקת — משימה לא בוצעה</span></div>
@@ -277,39 +263,6 @@ function mulMV(m,v){
            m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]*v[3],
            m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15]*v[3] ];
 }
-function ndcToPx(v,W,H){                   // clip space -> CSS pixels
-  var w=v[3];
-  return { x:((v[0]/w)*0.5+0.5)*W, y:(1-((v[1]/w)*0.5+0.5))*H };
-}
-/* Clip a polygon in homogeneous clip space against all six frustum planes
-   (Sutherland-Hodgman, one pass per plane). Clipping only against the near
-   plane is not enough: the floor plane runs under and behind the camera, and a
-   vertex left just in front of the lens projects to tens of thousands of
-   pixels. Clipping against the sides too keeps every vertex on screen. */
-var CLIP_PLANES=[
-  function(v){ return v[3]-1e-4; },        // w > 0
-  function(v){ return v[2]+v[3]; },        // near
-  function(v){ return v[0]+v[3]; },        // left
-  function(v){ return v[3]-v[0]; },        // right
-  function(v){ return v[1]+v[3]; },        // bottom
-  function(v){ return v[3]-v[1]; }         // top
-];
-function clipFrustum(poly){
-  for(var k=0;k<CLIP_PLANES.length && poly.length;k++){
-    var f=CLIP_PLANES[k], out=[], n=poly.length;
-    for(var i=0;i<n;i++){
-      var a=poly[i], b=poly[(i+1)%n], da=f(a), db=f(b);
-      if(da>=0) out.push(a);
-      if((da>=0)!==(db>=0)){
-        var t=da/(da-db);
-        out.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t,
-                  a[2]+(b[2]-a[2])*t, a[3]+(b[3]-a[3])*t]);
-      }
-    }
-    poly=out;
-  }
-  return poly;
-}
 function project(world,viewM,projM,W,H){
   var vp=mulMV(viewM,[world[0],world[1],world[2],1]);
   if(vp[2]>-0.05) return null;
@@ -385,7 +338,7 @@ $('iosSkip').onclick=function(){
 /* ---------------- AR session ---------------- */
 var session=null,gl=null,layer=null,refSpace=null,viewerSpace=null,hitSrc=null,
     retPose=null,fallbackPt=null,marks=[],camPos=[0,0,0],prevPos=null,anchorPos=null,
-    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0,aimMode='free',viewMcur=null;
+    walked=0,jumps=0,trackState='—',fps=0,frames=0,lastFps=0,aimMode='free';
 
 function noSelect(el){ if(el) el.addEventListener('beforexrselect',function(e){e.preventDefault();}); }
 
@@ -491,7 +444,6 @@ function onFrame(t,frame){
 
   var view=pose.views[0];
   var viewM=view.transform.inverse.matrix, projM=view.projectionMatrix;
-  viewMcur=viewM;
   var W=window.innerWidth,H=window.innerHeight;
 
   /* reticle */
@@ -517,7 +469,6 @@ function onFrame(t,frame){
     $('ret').style.transform='translate('+(W/2).toFixed(1)+'px,'+(H/2).toFixed(1)+'px)';
     aimMode='free';
   }
-  drawPlanes(frame,viewM,projM,W,H);
   refreshPlace();
   if(!marks.length){
     $('tip').textContent = !sel ? 'בחרו ציוד מהרשימה'
@@ -555,114 +506,20 @@ function onFrame(t,frame){
   tele();
 }
 
-/* ---- placement map -------------------------------------------------------
-   detectedPlanes is absent on many ARCore browsers, so the map cannot rely on
-   it. Instead a grid of hit-test rays is cast across the whole field of view:
-   every ray that lands on a surface is drawn as a dot. Same engine that already
-   produces the centre crosshair, so if the crosshair works, the map works. */
-var GCOLS=5, GROWS=6;
-var gridSrcs=[], gridState='off';      // off | building | ready | unsupported
-var planeCount=0, planeSupport=null, hitDots=0, enabledFeat='';
-
-function buildGrid(projM){
-  gridState='building';
-  var tanX = projM[0] ? 1/projM[0] : 0.55;
-  var tanY = projM[5] ? 1/projM[5] : 0.9;
-  var jobs=[];
-  for(var r=0;r<GROWS;r++){
-    for(var c=0;c<GCOLS;c++){
-      var nx=((c+0.5)/GCOLS)*2-1, ny=1-((r+0.5)/GROWS)*2;
-      var dx=nx*tanX, dy=ny*tanY, dz=-1;
-      var L=Math.sqrt(dx*dx+dy*dy+1);
-      jobs.push(session.requestHitTestSource({ space:viewerSpace,
-        offsetRay:new XRRay({x:0,y:0,z:0,w:1},{x:dx/L,y:dy/L,z:dz/L,w:0}) }));
-    }
-  }
-  Promise.all(jobs).then(function(list){
-    gridSrcs=list.filter(Boolean); gridState=gridSrcs.length?'ready':'unsupported';
-  }).catch(function(){ gridSrcs=[]; gridState='unsupported'; });
-}
-
-function drawPlanes(frame,viewM,projM,W,H){
-  var svg=$('planes'), parts=[], n=0;
-  svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  /* The ray grid must be drawn whether or not this browser exposes planes --
-     on most ARCore browsers detectedPlanes is absent, and an early return here
-     is what silently removed the whole map. */
-  planeSupport = !!frame.detectedPlanes;
-  if(planeSupport) frame.detectedPlanes.forEach(function(pl){
-    var pp;
-    try{ pp=frame.getPose(pl.planeSpace,refSpace); }catch(e){ return; }
-    if(!pp||!pl.polygon||pl.polygon.length<3) return;
-    var M=pp.transform.matrix, vs=[];
-    for(var i=0;i<pl.polygon.length;i++){
-      var q=pl.polygon[i];
-      var wp=mulMV(M,[q.x,q.y,q.z,1]);                 // plane space -> world
-      var vv=mulMV(viewM,[wp[0],wp[1],wp[2],1]);       // world -> view
-      vs.push(mulMV(projM,vv));                        // view -> clip
-    }
-    var cl=clipFrustum(vs);
-    if(cl.length<3) return;
-    var pts=[];
-    for(var j=0;j<cl.length;j++){
-      var sp=ndcToPx(cl[j],W,H);
-      pts.push(sp.x.toFixed(0)+','+sp.y.toFixed(0));
-    }
-    n++;
-    parts.push('<polygon class="'+(pl.orientation==='vertical'?'v':'h')
-              +'" points="'+pts.join(' ')+'"/>');
-  });
-  planeCount=n;
-  drawGrid(frame,projM,W,H,parts);
-  svg.innerHTML=parts.join('');
-  $('scan').classList.toggle('on', (n+hitDots)===0 && !marks.length);
-}
-
-/* Casting 30 rays every frame is wasteful: the room does not change at 60 Hz.
-   The rays are re-cast every GRID_EVERY frames and their WORLD positions kept,
-   then re-projected every frame -- so the dots still track the camera smoothly
-   at a fraction of the cost. */
-var GRID_EVERY=4, gridTick=0, gridHits=[];
-function drawGrid(frame,projM,W,H,parts){
-  if(gridState==='off' && session && viewerSpace && window.XRRay) buildGrid(projM);
-  if(gridState!=='ready'){ hitDots=0; return; }
-
-  if((gridTick++ % GRID_EVERY)===0){
-    gridHits=[];
-    for(var i=0;i<gridSrcs.length;i++){
-      var hs;
-      try{ hs=frame.getHitTestResults(gridSrcs[i]); }catch(e){ continue; }
-      if(!hs.length) continue;
-      var hp=hs[0].getPose(refSpace); if(!hp) continue;
-      var m=hp.transform.matrix;
-      gridHits.push([m[12],m[13],m[14]]);
-    }
-  }
-
-  hitDots=0;
-  for(var k=0;k<gridHits.length;k++){
-    var g=gridHits[k];
-    var d=Math.hypot(g[0]-camPos[0],g[1]-camPos[1],g[2]-camPos[2]);
-    var v=mulMV(projM,mulMV(viewMcur,[g[0],g[1],g[2],1]));
-    if(v[3]<=0) continue;
-    var sp=ndcToPx(v,W,H);
-    if(sp.x<-20||sp.x>W+20||sp.y<-20||sp.y>H+20) continue;
-    hitDots++;
-    var rad=Math.max(3.5,Math.min(11,16/Math.max(d,0.6)));
-    parts.push('<circle class="'+(d>4?'far':'')+'" cx="'+sp.x.toFixed(0)
-      +'" cy="'+sp.y.toFixed(0)+'" r="'+rad.toFixed(1)+'"/>');
-  }
-}
-
+/* The HUD a visitor sees carries only what the pitch needs. Everything a
+   developer needs lives behind ?dev=1 so the booth stays clean. */
+var DEV=/[?&]dev=1/.test(location.search);
+var enabledFeat='';
 function tele(){
-  $('tele').innerHTML =
-      '<span class="'+(trackState==='מעקב מלא'?'':'w')+'">'+trackState+'</span><br>'
-    + 'הלכתם <b>'+walked.toFixed(1)+'</b> מ׳<br>'
-    + 'סימונים <b>'+marks.length+'</b> · '+fps+'fps'+(jumps?' · קפיצות '+jumps:'')
-    + '<br>נקודות הנחה <b>'+hitDots+'</b>'
-    + (planeSupport?' · משטחים '+planeCount:'')
-    + (gridState==='unsupported'?' · רשת לא נתמכת':'')
-    + '<br><span style="font-size:9px;opacity:.75;direction:ltr;display:inline-block">'+enabledFeat+'</span>';
+  var h = 'הלכתם <b>'+walked.toFixed(1)+'</b> מ׳';
+  if(marks.length) h += '<br>סימונים <b>'+marks.length+'</b>';
+  if(trackState!=='מעקב מלא') h = '<span class="w">'+trackState+'</span><br>'+h;
+  if(DEV){
+    h += '<br>'+fps+'fps'+(jumps?' · קפיצות '+jumps:'')+' · '+aimMode
+      +  '<br><span style="font-size:9px;opacity:.75;direction:ltr;display:inline-block">'
+      +  enabledFeat+'</span>';
+  }
+  $('tele').innerHTML=h;
 }
 
 /* ---------------- task sheet ---------------- */
