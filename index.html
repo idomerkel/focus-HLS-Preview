@@ -154,11 +154,11 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
 <div class="screen on" id="s1">
   <div class="sin">
     <div class="kick">60 שניות</div>
-    <h1>הסימון נשאר על הציוד — גם כשאתם זזים</h1>
+    <h1>הסימון נשאר על הנקודה — גם כשאתם זזים</h1>
     <p>ההדגמה מקבלת את מיקום המכשיר מהמעקב החזותי של הטלפון — אותו עיקרון
        שעליו עובדת המערכת באתר. ניענוע הטלפון במקום לא יזיז כלום.</p>
     <ol>
-      <li>בחרו ציוד מהרשימה, כוונו אליו, והקישו ״הנח כאן״.</li>
+      <li>בחרו נקודת בקרה מהרשימה, כוונו אליה, והקישו ״הנח כאן״.</li>
       <li>עיגול מלא = הסימון נצמד למשטח שהטלפון זיהה. עיגול מקווקו = הנחה חופשית לפניכם. שניהם נעולים בחדר.</li>
       <li>הסתובבו והתרחקו — הסימון יישאר בדיוק שם.</li>
       <li>התקרבו שוב — המערכת תזהה שאתם שם ותציג את המשימות.</li>
@@ -195,7 +195,7 @@ h1{font-size:25px;line-height:1.16;font-weight:700;margin:7px 0 12px}
   <div class="sheet" id="sheet"><div class="scard" id="scard"></div></div>
 
   <div class="foot" id="foot">
-    <div class="tip" id="tip">בחרו ציוד מהרשימה</div>
+    <div class="tip" id="tip">בחרו נקודת בקרה מהרשימה</div>
     <div class="chips" id="chips"></div>
     <div class="acts">
       <button class="pri" id="place" disabled>הנח כאן</button>
@@ -261,26 +261,27 @@ var NEAR=1.6, APPROACH=2.8, FAR=3.0, FALLBACK_D=2.5;
 var WP_MIN=0.15, JUMP=0.5;   // waypoint spacing (m) and single-frame jump cutoff (m)
 
 var ITEMS=[
- {id:'wc', ic:'🚻',nm:'שירותים',tasks:[
-   {t:'ניקיון יסודי',f:'פעמיים ביום',d:'now',p:'כולל חידוש מתכלים ובדיקת ניקוזים.'},
-   {t:'בדיקת דליפות',f:'שבועי',d:'soon',p:'מתחת לכיור ובחיבורי האסלה.'}]},
- {id:'mir',ic:'🪞',nm:'מראה',tasks:[
-   {t:'ניקוי וליטוש',f:'שבועי',d:'soon',p:'ללא סימני מים בקצוות.'}]},
- {id:'trf',ic:'⚡',nm:'שנאי מרכזי',tasks:[
-   {t:'החלפת שמן',f:'כל 3 שנים',d:'ok',p:'כולל דגימה ובדיקת בידוד לפני ההחלפה.'},
-   {t:'בדיקה תרמוגרפית',f:'שנתי',d:'soon',p:'צילום חום בחיבורים תחת עומס.'}]},
- {id:'ext',ic:'🧯',nm:'מטף כיבוי',tasks:[
-   {t:'בדיקה חזותית',f:'חודשי',d:'now',p:'לחץ, פלומבה, גישה פנויה ושילוט.'},
-   {t:'בדיקה שנתית',f:'שנתי',d:'ok',p:'על ידי בודק מוסמך, עם תווית.'}]},
- {id:'hvc',ic:'❄',nm:'מזגן',tasks:[
-   {t:'ניקוי מסננים',f:'חודשי',d:'soon',p:'שטיפה וייבוש לפני החזרה.'},
-   {t:'טיפול מקיף',f:'שנתי',d:'ok',p:'לפני תחילת הקיץ.'}]},
- {id:'elv',ic:'🛗',nm:'מעלית',tasks:[
-   {t:'בדיקת בודק מוסמך',f:'חצי שנתי',d:'soon',p:'כולל תיעוד בפנקס המעלית.'}]},
- {id:'pmp',ic:'🔧',nm:'משאבה',tasks:[
-   {t:'הפעלת ניסיון',f:'שבועי',d:'now',p:'5 דקות, בדיקת לחץ ורעש חריג.'}]},
- {id:'lgt',ic:'💡',nm:'תאורת חירום',tasks:[
-   {t:'בדיקת גיבוי',f:'חודשי',d:'soon',p:'ניתוק זרם ווידוא הדלקה.'}]},
+ {id:'rec',ic:'🛎',nm:'עמדת קבלה',tasks:[
+   {t:'איוש העמדה',f:'רציף',d:'now',p:'נוכחות בעמדה לאורך המשמרת, לפי סף שהוגדר.'},
+   {t:'רישום מבקרים',f:'רציף',d:'soon',p:'זיהוי, רישום ומסירת תג לכל מבקר.'}]},
+ {id:'exd',ic:'🚪',nm:'דלת חירום',tasks:[
+   {t:'נתיב מילוט פנוי',f:'כל משמרת',d:'now',p:'לא חסומה, לא נעולה, נפתחת לכיוון היציאה.'},
+   {t:'תקינות מנגנון',f:'חודשי',d:'ok',p:'ידית בהלה ומחזיר שמן.'}]},
+ {id:'gat',ic:'🚧',nm:'שער ומחסום',tasks:[
+   {t:'סגור ונעול',f:'כל סבב',d:'soon',p:'כולל בדיקת מנעול ושלמות הגדר הסמוכה.'},
+   {t:'בקרת כניסה פעילה',f:'כל משמרת',d:'ok',p:'קורא כרטיסים ואינטרקום מגיבים.'}]},
+ {id:'ctl',ic:'🖥',nm:'חדר בקרה',tasks:[
+   {t:'מסכים והקלטה',f:'כל משמרת',d:'now',p:'כל הערוצים עולים והקלטה רצה.'},
+   {t:'יומן אירועים',f:'כל משמרת',d:'soon',p:'אירועי המשמרת מתועדים ונסגרים.'}]},
+ {id:'rof',ic:'🔒',nm:'גישה לגג',tasks:[
+   {t:'נעולה',f:'כל סבב',d:'soon',p:'דלת הגג נעולה ואין סימני פריצה.'}]},
+ {id:'par',ic:'🅿',nm:'חניון',tasks:[
+   {t:'סבב חניון',f:'כל 4 שעות',d:'now',p:'מפלסים, פינות מתות, רכבים חריגים.'},
+   {t:'תאורה תקינה',f:'שבועי',d:'ok',p:'אין מפלס חשוך או גוף שרוף.'}]},
+ {id:'fen',ic:'🧱',nm:'גדר היקפית',tasks:[
+   {t:'שלמות הגדר',f:'יומי',d:'soon',p:'אין פרצות, חיתוכים או ערימות לטיפוס.'}]},
+ {id:'key',ic:'🔑',nm:'ארון מפתחות',tasks:[
+   {t:'ספירה ופלומבה',f:'בכל חילוף',d:'ok',p:'ספירה מול הרשימה, פלומבה שלמה, חתימת מוסר ומקבל.'}]},
 ];
 var DUE={now:'דורש טיפול',soon:'מתקרב',ok:'בתוקף'};
 var COL={now:'#E5484D',soon:'#E0A02E',ok:'#3FB984'};
@@ -418,7 +419,7 @@ function refreshPlace(){
 }
 
 function placeHere(){
-  if(!sel) { $('tip').textContent='בחרו קודם ציוד מהרשימה'; return; }
+  if(!sel) { $('tip').textContent='בחרו קודם נקודת בקרה'; return; }
   var p = retPose ? [retPose[12],retPose[13],retPose[14]] : (fallbackPt?fallbackPt.slice():null);
   if(!p) return;
   var it=ITEMS.filter(function(i){return i.id===sel;})[0];
@@ -501,7 +502,7 @@ function onFrame(t,frame){
   }
   refreshPlace();
   if(!marks.length){
-    $('tip').textContent = !sel ? 'בחרו ציוד מהרשימה'
+    $('tip').textContent = !sel ? 'בחרו נקודת בקרה מהרשימה'
       : (aimMode==='surface' ? 'זוהה משטח — כוונו והקישו ״הנח כאן״'
                              : 'אין משטח מזוהה — ההנחה תהיה ' + FALLBACK_D.toFixed(1) + ' מ׳ לפניכם');
   }
@@ -625,18 +626,21 @@ $('done').onclick=function(){
   marks.forEach(function(m){
     tasks+=m.tasks.length;
     m.tasks.forEach(function(t){
-      if(t.f.indexOf('ביום')>-1) daily++;
-      if(t.f.indexOf('שנים')>-1||t.f.indexOf('שנתי')>-1) rare++;
+      // guard rounds are counted by shift cadence, not by maintenance intervals
+      var inShift=['רציף','כל משמרת','כל סבב','כל 4 שעות','יומי','בכל חילוף'];
+      var hit=false;
+      for(var q=0;q<inShift.length;q++) if(t.f.indexOf(inShift[q])>-1){hit=true;break;}
+      if(hit) daily++; else rare++;
       if(t.d==='now') open++;
     });
   });
   window.SUMMARY={marks:marks.length,tasks:tasks,daily:daily,rare:rare,
                   walked:+walked.toFixed(1),alerts:alertCount,open:open};
   $('sum').innerHTML=
-    '<div class="r"><span>ציוד שסימנתם</span><b>'+marks.length+'</b></div>'+
+    '<div class="r"><span>נקודות שסימנתם</span><b>'+marks.length+'</b></div>'+
     '<div class="r"><span>משימות שנגזרו מהן</span><b>'+tasks+'</b></div>'+
-    '<div class="r"><span>מהן יומיומיות</span><b>'+daily+'</b></div>'+
-    '<div class="r"><span>מהן שנתיות ומעלה</span><b>'+rare+'</b></div>'+
+    '<div class="r"><span>מהן בכל משמרת</span><b>'+daily+'</b></div>'+
+    '<div class="r"><span>מהן תקופתיות</span><b>'+rare+'</b></div>'+
     '<div class="r"><span>מטרים שהמערכת מדדה</span><b>'+walked.toFixed(1)+'</b></div>'+
     '<div class="r"><span>התראות שנשלחו בזמן</span><b>'+alertCount+'</b></div>'+
     '<div class="r"><span>כמה מהן צריך לזכור</span><b>0</b></div>';
@@ -656,7 +660,7 @@ $('send').onclick=function(){
     +'חברה: '+($('co').value.trim()||'—')+'\n'
     +'בניינים: '+($('bld').value.trim()||'—')+'\n'
     +'טלפון: '+ph+'\n'
-    +'---\nבהדגמה: '+(s.marks||0)+' ציוד, '+(s.tasks||0)+' משימות, '
+    +'---\nבהדגמה: '+(s.marks||0)+' נקודות, '+(s.tasks||0)+' משימות, '
     +(s.walked||0)+' מ׳ הליכה, '+(s.alerts||0)+' התראות.';
   var url='https://wa.me/'+CFG.wa+'?text='+encodeURIComponent(txt);
   $('sendNote').style.display='block';
